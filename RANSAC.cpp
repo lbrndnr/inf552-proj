@@ -1,4 +1,4 @@
-#include <RANSAC.h>
+#include "RANSAC.h"
 
 // static void estimateHomography(vector<Keypoint> const &m1, vector<Keypoint> const &m2, Mat &H) {
 //     Mat A = zeros();
@@ -22,15 +22,17 @@ void calculateLine(vector<Point2f> const &points, vector<float> &line) {
     float m = (points[0].y - points[1].y)/(points[0].x - points[1].x);
     float b = points[0].y - points[0].x*m;
 
-    line = {m, b};
+    line.push_back(m);
+    line.push_back(b);
 }
 
 float calculateError(vector<float> currentParameters, Point2f &point) {
-
+    return 0;
 }
 
 void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line) {
     int numberOfPoints = 2;
+    int m = cloud.size();
 
     vector<float> bestParameters;
     int maxNumberOfInliers = 0;
@@ -43,7 +45,9 @@ void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line) {
         while(i2==i1) i2 = rand() % m;
 
         vector<float> currentParameters;
-        vector<Point2f> currentPoints = {cloud[i1], cloud[i2]};
+        vector<Point2f> currentPoints;
+        currentPoints.push_back(cloud[i1]);
+        currentPoints.push_back(cloud[i2]);
         calculateLine(currentPoints, currentParameters);
 
         int numberOfInliers = 0;
@@ -63,5 +67,3 @@ void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line) {
 
 
 }
-
-#endif

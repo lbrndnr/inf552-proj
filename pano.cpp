@@ -32,7 +32,6 @@ int main()
 
 	vector<float> line;
 	ransac(cloud, 1.0f, line);
-	// cout << line << endl;
 
 	return 0;
 }
