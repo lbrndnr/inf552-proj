@@ -10,6 +10,6 @@ using namespace std;
 	
 // };
 
-void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line);
+void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line, std::function<bool(int)> while_condition);
 
 #endif

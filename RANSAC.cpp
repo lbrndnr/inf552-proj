@@ -36,16 +36,16 @@ float calculateError(vector<Point2f> const & currentParameters, Point2f const & 
     return abs(dy * p0.x - dx * p0.y + p2.x * p1.y + p2.y * p1.x)/sqrt(dy*dy + dx*dx);
 }
 
-void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line) {
+void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line, std::function<bool(int)> while_condition) {
     int numberOfPoints = 2;
     int m = cloud.size();
 
     vector<Point2f> bestPoints;
     int maxNumberOfInliers = 0;
 
-    int i = 100;
+    int i = 0;
 
-    while(i >= 0) {
+    while(while_condition(i)) {
         int i1 = rand() % m;
         int i2 = i1;
         while(i2==i1) i2 = rand() % m;
@@ -68,7 +68,8 @@ void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line) {
             maxNumberOfInliers = numberOfInliers;
             bestPoints = currentPoints;
         }
-        i--;
+        
+        i++;
     }
 
 

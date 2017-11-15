@@ -4,11 +4,16 @@
 #include <opencv2/imgproc.hpp>
 
 #include <iostream>
+#include <functional>
 
 #include "RANSAC.h"
 
 using namespace std;
 using namespace cv;
+
+bool iterate_while(int i) {
+	return i < 100;
+}
 
 int main()
 {
@@ -31,7 +36,7 @@ int main()
 	cloud.push_back(Point2f(2, 2));
 
 	vector<float> line;
-	ransac(cloud, 1.0f, line);
+	ransac(cloud, 1.0f, line, &iterate_while);
 
 	return 0;
 }
