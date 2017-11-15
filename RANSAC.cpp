@@ -36,29 +36,92 @@ float calculateError(vector<Point2f> const & currentParameters, Point2f const & 
     return abs(dy * p0.x - dx * p0.y + p2.x * p1.y + p2.y * p1.x)/sqrt(dy*dy + dx*dx);
 }
 
-void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line, std::function<bool(int)> while_condition) {
-    int numberOfPoints = 2;
-    int m = cloud.size();
+// template <class Parameter_T, Data_T>
+// void ransac(int minNumberOfDataPoints,
+//             vector<Data_T> cloud,
+//             std::function<void(vector<Data_T>, &Parameter_T)> calculateParameters, 
+//             float errorThreshold, 
+//             std::function<float(Data_T, Parameter_T)> calculateError, 
+//             vector<float> &line, 
+//             std::function<bool(int)> while_condition) {
+//     int numberOfPoints = 2;
+//     int m = cloud.size();
 
-    vector<Point2f> bestPoints;
+//     vector<Point2f> bestPoints;
+//     int maxNumberOfInliers = 0;
+
+//     int i = 0;
+
+//     while(while_condition(i)) {
+//         int i1 = rand() % m;
+//         int i2 = i1;
+//         while(i2==i1) i2 = rand() % m;
+
+//         // vector<float> currentParameters;
+//         vector<Point2f> currentPoints;
+//         currentPoints.push_back(cloud[i1]);
+//         currentPoints.push_back(cloud[i2]);
+//         // calculateLine(currentPoints, currentParameters);
+
+//         int numberOfInliers = 0;
+//         for (int i = 0; i < cloud.size(); i++) {
+//             float error = calculateError(currentPoints, cloud[i]);
+//             if (error <= errorThreshold) {
+//                 numberOfInliers++;
+//             }
+//         }
+
+//         if (numberOfInliers > maxNumberOfInliers) {
+//             maxNumberOfInliers = numberOfInliers;
+//             bestPoints = currentPoints;
+//         }
+
+//         i++;
+//     }
+
+
+// }
+
+template <class Parameter_T, class Data_T>
+void ransac(int minNumberOfDataPoints,
+            vector<Data_T> data,
+            std::function<void(vector<Data_T>, Parameter_T&)> calculateParameters, 
+            float errorThreshold, 
+            std::function<float(Data_T, Parameter_T)> calculateError, 
+            Parameter_T& bestFittingParameters,
+            std::function<bool(int)> while_condition) {
+    int m = data.size();
     int maxNumberOfInliers = 0;
-
     int i = 0;
 
     while(while_condition(i)) {
-        int i1 = rand() % m;
-        int i2 = i1;
-        while(i2==i1) i2 = rand() % m;
+        vector<Data_T> currentData;
+        vector<int> indexes;
+        indexes.push_back(rand() % m);
+        currentData.push_back(data[indexes[0]]);
 
-        // vector<float> currentParameters;
-        vector<Point2f> currentPoints;
-        currentPoints.push_back(cloud[i1]);
-        currentPoints.push_back(cloud[i2]);
-        // calculateLine(currentPoints, currentParameters);
+        for (int j = 1; j < minNumberOfDataPoints; j++) {
+            bool isDiff = false;
+            int currentRandom = 0;
+            while(!isDiff){
+                currentRandom = rand() % m;
+                isDiff = true;
+                for(int k=0; k<j && isDiff;k++) {
+                    if (currentRandom == currentData[k]) {
+                        isDiff = false;
+                    }
+                }
+            }
+            indexes.push_back(currentRandom);
+            currentData.push_back(data[indexes[j]]);
+        }
+
+        Parameter_T currentParameters;
+        calculateParameters(currentData, currentParameters);
 
         int numberOfInliers = 0;
-        for (int i = 0; i < cloud.size(); i++) {
-            float error = calculateError(currentPoints, cloud[i]);
+        for (int j = 0; j < data.size(); j++) {
+            float error = calculateError(data[j], currentParameters);
             if (error <= errorThreshold) {
                 numberOfInliers++;
             }
@@ -66,9 +129,9 @@ void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line, st
 
         if (numberOfInliers > maxNumberOfInliers) {
             maxNumberOfInliers = numberOfInliers;
-            bestPoints = currentPoints;
+            bestFittingParameters = currentParameters;
         }
-        
+
         i++;
     }
 
