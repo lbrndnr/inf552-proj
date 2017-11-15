@@ -18,23 +18,6 @@
 //     }
 // }
 
-void calculateLine(vector<Point2f> const &points, vector<float> &line) {
-    float m = (points[0].y - points[1].y)/(points[0].x - points[1].x);
-    float b = points[0].y - points[0].x*m;
-
-    line.push_back(m);
-    line.push_back(b);
-}
-
-float calculateError(vector<Point2f> const & currentParameters, Point2f const & p0) {
-    Point2f p1 = currentParameters[0];
-    Point2f p2 = currentParameters[1];
-
-    float dy = p2.y-p1.y;
-    float dx = p2.x - p1.x;
-
-    return abs(dy * p0.x - dx * p0.y + p2.x * p1.y + p2.y * p1.x)/sqrt(dy*dy + dx*dx);
-}
 
 // template <class Parameter_T, Data_T>
 // void ransac(int minNumberOfDataPoints,
@@ -82,19 +65,19 @@ float calculateError(vector<Point2f> const & currentParameters, Point2f const & 
 
 // }
 
-template <class Parameter_T, class Data_T>
+template <class Parameter_T, class Data_T, class Func_Calculate_Param, class Func_Calculate_Error, class Allocator>
 void ransac(int minNumberOfDataPoints,
-            vector<Data_T> data,
-            std::function<void(vector<Data_T>, Parameter_T&)> calculateParameters, 
-            float errorThreshold, 
-            std::function<float(Data_T, Parameter_T)> calculateError, 
-            Parameter_T& bestFittingParameters,
-            std::function<bool(int)> while_condition) {
+			vector<Data_T, Allocator> data,
+			Func_Calculate_Param calculateParameters,
+			float errorThreshold,
+			Func_Calculate_Error calculateError,
+			Parameter_T& bestFittingParameters,
+			int numOfIterations) {
     int m = data.size();
     int maxNumberOfInliers = 0;
     int i = 0;
 
-    while(while_condition(i)) {
+    while(i<numOfIterations) {
         vector<Data_T> currentData;
         vector<int> indexes;
         indexes.push_back(rand() % m);

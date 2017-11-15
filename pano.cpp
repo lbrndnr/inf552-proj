@@ -15,8 +15,44 @@ bool iterate_while(int i) {
 	return i < 100;
 }
 
+class lineCalculator {
+	void calculateLine(vector<Point2f> points, vector<Point2f> &line) {
+		//float m = (points[0].y - points[1].y)/(points[0].x - points[1].x);
+		//float b = points[0].y - points[0].x*m;
+
+		//line.push_back(m);
+		//line.push_back(b);
+		line = points;
+	}
+};
+
+class errorCalculator {
+	float calculateError(vector<Point2f> const & currentParameters, Point2f const & p0) {
+		Point2f p1 = currentParameters[0];
+		Point2f p2 = currentParameters[1];
+
+		float dy = p2.y - p1.y;
+		float dx = p2.x - p1.x;
+
+		return abs(dy * p0.x - dx * p0.y + p2.x * p1.y + p2.y * p1.x) / sqrt(dy*dy + dx*dx);
+	}
+};
+
+
+
 int main()
 {
+
+
+	vector<Point2f> cloud;
+	cloud.push_back(Point2f(1, 1));
+	cloud.push_back(Point2f(2, 2));
+	vector<Point2f> line;
+	ransac(2, cloud, lineCalculator(), 1.0f, errorCalculator(), line, 10);
+
+
+
+	/*
 	Mat I1 = imread("../IMG_0045.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 	Mat I2 = imread("../IMG_0046.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 	//Mat I2 = imread("../IMG_0046r.JPG", CV_LOAD_IMAGE_GRAYSCALE);
@@ -40,7 +76,7 @@ int main()
 	imshow("I2", J);
 	waitKey(0);
 
-	BFMatcher M(NORM_L2/*,true*/);
+	BFMatcher M(NORM_L2/*,true*//*);
 	vector<DMatch> matches;
 	M.match(desc1, desc2, matches);
 	cout << matches.size() << endl;
@@ -55,10 +91,9 @@ int main()
 		matches1.push_back(m1[matches[i].queryIdx].pt);
 		matches2.push_back(m2[matches[i].trainIdx].pt);
 	}
+	*/
 
-	// vector<Point2f> cloud = matches1;
-	// vector<float> line;
-	// ransac(cloud, 1.0f, line, &iterate_while);
+	/*
 
 	Mat mask; // Inliers?
 	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
@@ -82,5 +117,6 @@ int main()
 
 
 	waitKey(0);
+	*/
 	return 0;
 }

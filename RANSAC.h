@@ -6,13 +6,13 @@
 using namespace cv;
 using namespace std;
 
-template <class Parameter_T, class Data_T>
+template <class Parameter_T, class Data_T, class Func_Calculate_Param, class Func_Calculate_Error, class Allocator>
 void ransac(int minNumberOfDataPoints,
-            vector<Data_T> data,
-            std::function<void(vector<Data_T>, Parameter_T&)> calculateParameters, 
+            vector<Data_T, Allocator> data,
+			Func_Calculate_Param calculateParameters,
             float errorThreshold, 
-            std::function<float(Data_T, Parameter_T)> calculateError, 
+			Func_Calculate_Error calculateError,
             Parameter_T& bestFittingParameters,
-            std::function<bool(int)> while_condition);
+			int numOfIterations);
 
 #endif
