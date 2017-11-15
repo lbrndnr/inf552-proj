@@ -41,6 +41,7 @@ void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line) {
     int m = cloud.size();
 
     vector<Point2f> bestPoints;
+
     int maxNumberOfInliers = 0;
 
     int i = 100;
@@ -54,7 +55,7 @@ void ransac(vector<Point2f> cloud, float errorThreshold, vector<float> &line) {
         vector<Point2f> currentPoints;
         currentPoints.push_back(cloud[i1]);
         currentPoints.push_back(cloud[i2]);
-        // calculateLine(currentPoints, currentParameters);
+        //calculateLine(currentPoints, currentParameters);
 
         int numberOfInliers = 0;
         for (int i = 0; i < cloud.size(); i++) {

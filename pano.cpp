@@ -28,10 +28,11 @@ int main()
 
 	vector<Point2f> cloud;
 	cloud.push_back(Point2f(1, 1));
-	cloud.push_back(Point2f(2, 2));
+	cloud.push_back(Point2f(2, 4));
 
 	vector<float> line;
 	ransac(cloud, 1.0f, line);
-
+	cout << "m: " << line[0] << "b: " << line[1];
+	system("pause");
 	return 0;
 }
