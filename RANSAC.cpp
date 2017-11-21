@@ -1,5 +1,8 @@
 #include "RANSAC.h"
 
+using namespace cv;
+using namespace std;
+
 // static void estimateHomography(vector<Keypoint> const &m1, vector<Keypoint> const &m2, Mat &H) {
 //     Mat A = zeros();
 // }
@@ -18,23 +21,61 @@
 //     }
 // }
 
-void calculateLine(vector<Point2f> const &points, vector<float> &line) {
-    float m = (points[0].y - points[1].y)/(points[0].x - points[1].x);
-    float b = points[0].y - points[0].x*m;
+// template <class Parameter_T, class Data_T, class CalculateParameterF>
+// void ransac(int minNumberOfDataPoints,
+//         vector<Data_T> data,
+//         CalculateParameterF calculateParameters, 
+//         float errorThreshold, 
+//         // std::function<float(Data_T, Parameter_T)> calculateError, 
+//         // Parameter_T& bestFittingParameters,
+//         std::function<bool(int)> while_condition) {
+//     int m = data.size();
+//     int maxNumberOfInliers = 0;
+//     int i = 0;
 
-    line.push_back(m);
-    line.push_back(b);
-}
+//     while(while_condition(i)) {
+//         vector<Data_T> currentData;
+//         vector<int> indices;
+//         indices.push_back(rand() % m);
+//         currentData.push_back(data[indices[0]]);
 
-float calculateError(vector<Point2f> const & currentParameters, Point2f const & p0) {
-    Point2f p1 = currentParameters[0];
-    Point2f p2 = currentParameters[1];
+//         for (int j = 1; j < minNumberOfDataPoints; j++) {
+//             bool isDiff = false;
+//             int currentRandom = 0;
+//             while(!isDiff){
+//                 currentRandom = rand() % m;
+//                 isDiff = true;
+//                 for(int k=0; k<j && isDiff;k++) {
+//                     if (currentRandom == indices[k]) {
+//                         isDiff = false;
+//                     }
+//                 }
+//             }
+//             indices.push_back(currentRandom);
+//             currentData.push_back(data[indices[j]]);
+//         }
 
-    float dy = p2.y-p1.y;
-    float dx = p2.x - p1.x;
+//         Parameter_T currentParameters;
+//         calculateParameters(currentData, currentParameters);
 
-    return abs(dy * p0.x - dx * p0.y + p2.x * p1.y + p2.y * p1.x)/sqrt(dy*dy + dx*dx);
-}
+//         int numberOfInliers = 0;
+//         for (int j = 0; j < data.size(); j++) {
+//             float error = 0.0f; //calculateError(data[j], currentParameters);
+//             if (error <= errorThreshold) {
+//                 numberOfInliers++;
+//             }
+//         }
+
+//         if (numberOfInliers > maxNumberOfInliers) {
+//             maxNumberOfInliers = numberOfInliers;
+//             // bestFittingParameters = currentParameters;
+//         }
+
+//         i++;
+//     }
+
+
+// }
 
 // template <class Parameter_T, Data_T>
 // void ransac(int minNumberOfDataPoints,
@@ -81,59 +122,3 @@ float calculateError(vector<Point2f> const & currentParameters, Point2f const & 
 
 
 // }
-
-template <class Parameter_T, class Data_T>
-void ransac(int minNumberOfDataPoints,
-            vector<Data_T> data,
-            std::function<void(vector<Data_T>, Parameter_T&)> calculateParameters, 
-            float errorThreshold, 
-            std::function<float(Data_T, Parameter_T)> calculateError, 
-            Parameter_T& bestFittingParameters,
-            std::function<bool(int)> while_condition) {
-    int m = data.size();
-    int maxNumberOfInliers = 0;
-    int i = 0;
-
-    while(while_condition(i)) {
-        vector<Data_T> currentData;
-        vector<int> indexes;
-        indexes.push_back(rand() % m);
-        currentData.push_back(data[indexes[0]]);
-
-        for (int j = 1; j < minNumberOfDataPoints; j++) {
-            bool isDiff = false;
-            int currentRandom = 0;
-            while(!isDiff){
-                currentRandom = rand() % m;
-                isDiff = true;
-                for(int k=0; k<j && isDiff;k++) {
-                    if (currentRandom == currentData[k]) {
-                        isDiff = false;
-                    }
-                }
-            }
-            indexes.push_back(currentRandom);
-            currentData.push_back(data[indexes[j]]);
-        }
-
-        Parameter_T currentParameters;
-        calculateParameters(currentData, currentParameters);
-
-        int numberOfInliers = 0;
-        for (int j = 0; j < data.size(); j++) {
-            float error = calculateError(data[j], currentParameters);
-            if (error <= errorThreshold) {
-                numberOfInliers++;
-            }
-        }
-
-        if (numberOfInliers > maxNumberOfInliers) {
-            maxNumberOfInliers = numberOfInliers;
-            bestFittingParameters = currentParameters;
-        }
-
-        i++;
-    }
-
-
-}
