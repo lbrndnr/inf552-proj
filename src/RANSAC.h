@@ -3,15 +3,17 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include <iostream>
+
 using namespace cv;
 using namespace std;
 
-template <class Parameter_T, class Data_T, class CalculateParameterF>
+template <class Parameter_T, class Data_T, class CalculateParameterF, class CalculateErrorF>
 void ransac(int minNumberOfDataPoints,
         vector<Data_T> data,
         CalculateParameterF calculateParameters, 
         float errorThreshold, 
-        // std::function<float(Data_T, Parameter_T)> calculateError, 
+        CalculateErrorF calculateError, 
         std::function<bool(int)> while_condition,
         Parameter_T& bestFittingParameters) {
     int m = data.size();
@@ -45,13 +47,13 @@ void ransac(int minNumberOfDataPoints,
 
         int numberOfInliers = 0;
         for (int j = 0; j < data.size(); j++) {
-            float error = 0.0f; //calculateError(data[j], currentParameters);
+            float error = calculateError(data[j], currentParameters);
             if (error <= errorThreshold) {
                 numberOfInliers++;
             }
         }
 
-        if (numberOfInliers > maxNumberOfInliers) {
+        if (numberOfInliers >= maxNumberOfInliers) {
             maxNumberOfInliers = numberOfInliers;
             bestFittingParameters = currentParameters;
         }

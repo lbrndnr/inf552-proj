@@ -21,6 +21,18 @@ struct CalculateLine {
 	}
 };
 
+struct CalculateError {
+	float operator()(Point2f p0, vector<Point2f> &currentParameters) const {
+		Point2f p1 = currentParameters[0];
+		Point2f p2 = currentParameters[1];
+
+		float dy = p2.y-p1.y;
+		float dx = p2.x - p1.x;
+
+		return abs(dy * p0.x - dx * p0.y + p2.x * p1.y + p2.y * p1.x)/sqrt(dy*dy + dx*dx);
+	}
+};
+
 // void calculateLine(vector<Point2f> const &points, vector<float> &line) {
 //     float m = (points[0].y - points[1].y)/(points[0].x - points[1].x);
 //     float b = points[0].y - points[0].x*m;
@@ -29,17 +41,6 @@ struct CalculateLine {
 //     line.push_back(b);
 // }
 
-float calculateError(int p0, int p1) {
-	return 0;
-    // Point2f p1 = currentParameters[0];
-    // Point2f p2 = currentParameters[1];
-
-    // float dy = p2.y-p1.y;
-    // float dx = p2.x - p1.x;
-
-    // return abs(dy * p0.x - dx * p0.y + p2.x * p1.y + p2.y * p1.x)/sqrt(dy*dy + dx*dx);
-}
-
 int main()
 {
 	vector<Point2f> cloud;
@@ -47,10 +48,11 @@ int main()
 	cloud.push_back(Point2f(2, 2));
 
 	vector<Point2f> line;
-	ransac(2, cloud, CalculateLine(), 1, &iterate_while, line);
+	ransac(2, cloud, CalculateLine(), 1, CalculateError(), &iterate_while, line);
+	cout << line << endl;
 
-	Mat I1 = imread("../IMG_0045.JPG", CV_LOAD_IMAGE_GRAYSCALE);
-	Mat I2 = imread("../IMG_0046.JPG", CV_LOAD_IMAGE_GRAYSCALE);
+	Mat I1 = imread("../resources/IMG_0045.JPG", CV_LOAD_IMAGE_GRAYSCALE);
+	Mat I2 = imread("../resources/IMG_0046.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 	//Mat I2 = imread("../IMG_0046r.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 	namedWindow("I1", 1);
 	namedWindow("I2", 1);
