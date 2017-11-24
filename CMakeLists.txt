@@ -4,8 +4,8 @@ FIND_PACKAGE(OpenCV REQUIRED)
 
 PROJECT(TP5)
 
-ADD_EXECUTABLE(pano src/pano.cpp src/RANSAC.cpp src/RANSAC-impl.cpp src/RANSAC.h)
+ADD_EXECUTABLE(pano src/pano.cpp src/RANSAC.tpp src/RANSAC.h)
 TARGET_LINK_LIBRARIES(pano ${OpenCV_LIBS})
 
-ADD_EXECUTABLE(test test/ransac_test.cpp src/RANSAC.cpp src/RANSAC-impl.cpp src/RANSAC.h)
+ADD_EXECUTABLE(test test/ransac_test.cpp src/RANSAC.tpp src/RANSAC.h)
 TARGET_LINK_LIBRARIES(test ${OpenCV_LIBS})
