@@ -22,6 +22,7 @@
         "algorithm": "cpp",
         "iostream": "cpp",
         "ostream": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "random": "cpp"
     }
 }

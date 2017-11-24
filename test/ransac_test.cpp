@@ -1,5 +1,6 @@
 #include <iostream>
 #include <functional>
+#include <random>
 
 #include "../src/RANSAC.h"
 
@@ -7,7 +8,7 @@ using namespace std;
 using namespace cv;
 
 bool iterate_while(int i) {
-	return i < 100;
+	return i < 10000;
 }
 
 struct CalculateLine {
@@ -30,8 +31,22 @@ struct CalculateError {
 
 void testRANSAC() {
     vector<Point2f> cloud;
-	cloud.push_back(Point2f(1, 1));
-	cloud.push_back(Point2f(2, 2));
+	int axis = 100;
+
+	// Add inliers
+	for (int i = 0; i < axis; i++) {
+		cloud.push_back(Point2f(i, i));
+	}
+
+	// Add outliers
+
+	random_device rd;
+    mt19937 gen(rd()); 
+    uniform_real_distribution<> dis(0.0, axis);
+
+	for (int i = 0; i < axis/2; i++) {
+		cloud.push_back(Point2f(dis(gen), dis(gen)));
+	}
 
 	vector<Point2f> line;
 	ransac(2, cloud, CalculateLine(), 1, CalculateError(), &iterate_while, line);
