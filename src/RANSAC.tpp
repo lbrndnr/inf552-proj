@@ -1,19 +1,44 @@
 using namespace cv;
 using namespace std;
 
+struct IterateCondition {
+
+private:
+    int maxNumberOfIterations;
+
+public:
+    IterateCondition(int i): maxNumberOfIterations(i) {}
+
+	bool operator()(int iterations) const {
+		return iterations < maxNumberOfIterations;
+	}
+
+};
+
 template <class Parameter_T, class Data_T, class CalculateParameterF, class CalculateErrorF>
 void ransac(int minNumberOfDataPoints,
         vector<Data_T> data,
         CalculateParameterF calculateParameters, 
         double errorThreshold, 
         CalculateErrorF calculateError, 
-        std::function<bool(int)> while_condition,
+        int maxNumberOfIterations,
+        Parameter_T& bestFittingParameters) {
+    ransac(minNumberOfDataPoints, data, calculateParameters, errorThreshold, calculateError, IterateCondition(maxNumberOfIterations), bestFittingParameters);
+}
+
+template <class Parameter_T, class Data_T, class CalculateParameterF, class IterateConditionF, class CalculateErrorF>
+void ransac(int minNumberOfDataPoints,
+        vector<Data_T> data,
+        CalculateParameterF calculateParameters, 
+        double errorThreshold, 
+        CalculateErrorF calculateError, 
+        IterateConditionF whileCondition,
         Parameter_T& bestFittingParameters) {
     int m = data.size();
     int maxNumberOfInliers = 0;
     int i = 0;
 
-    while(while_condition(i)) {
+    while(whileCondition(i)) {
         vector<Data_T> currentData;
         vector<int> indices;
         indices.push_back(rand() % m);

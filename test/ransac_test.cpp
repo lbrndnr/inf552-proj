@@ -7,10 +7,6 @@
 using namespace std;
 using namespace cv;
 
-bool iterate_while(int i) {
-	return i < 10000;
-}
-
 struct CalculateLine {
 	void operator()(vector<Point2f> const &points, vector<Point2f> &line) const {
 		line = points;
@@ -48,7 +44,7 @@ void testRANSAC() {
 	}
 
 	vector<Point2f> line;
-	ransac(2, cloud, CalculateLine(), 1, CalculateError(), &iterate_while, line);
+	ransac(2, cloud, CalculateLine(), 1, CalculateError(), 150, line);
 	cout << line << endl;
 }
 

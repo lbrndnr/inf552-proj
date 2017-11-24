@@ -9,21 +9,22 @@
 using namespace cv;
 using namespace std;
 
-struct RANSACIterator {
-    int maxNumberOfIterations;
-
-	bool operator()(int iterations, double currentError) const {
-		return iterations < maxNumberOfIterations;
-	}
-};
-
 template <class Parameter_T, class Data_T, class CalculateParameterF, class CalculateErrorF>
 void ransac(int minNumberOfDataPoints,
         vector<Data_T> data,
         CalculateParameterF calculateParameters, 
         double errorThreshold, 
         CalculateErrorF calculateError, 
-        std::function<bool(int)> while_condition,
+        int maxNumberOfIterations,
+        Parameter_T& bestFittingParameters);
+
+template <class Parameter_T, class Data_T, class CalculateParameterF, class IterateConditionF, class CalculateErrorF>
+void ransac(int minNumberOfDataPoints,
+        vector<Data_T> data,
+        CalculateParameterF calculateParameters, 
+        double errorThreshold, 
+        CalculateErrorF calculateError, 
+        IterateConditionF whileCondition,
         Parameter_T& bestFittingParameters);
 
 // In order to separate the template declaration from its implementation
