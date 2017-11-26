@@ -24,6 +24,8 @@
         "ostream": "cpp",
         "chrono": "cpp",
         "random": "cpp",
-        "*.tpp": "cpp"
+        "*.tpp": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp"
     }
 }

@@ -2,9 +2,7 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
-
 #include <iostream>
-#include <functional>
 
 #include "RANSAC.h"
 #include "pano.h"
@@ -12,56 +10,48 @@
 using namespace std;
 using namespace cv;
 
-bool iterate_while(int i) {
-	return i < 100;
-}
+struct CalculateHomographyF {
 
-struct CalculateLine {
-	void operator()(vector<Point2f> const &points, vector<Point2f> &line) const {
-		line = points;
+	void operator()(vector< pair<Point2f, Point2f> > const &matches, Mat &homography) const {
+        Mat A = Mat::zeros(matches.size(), 2, CV_32FC1);
+        Mat B = Mat::zeros(matches.size(), 2, CV_32FC1);
+        Mat H;
+
+        for (int i = 0; i < matches.size(); i++) {
+            A.at<float>(i, 0) = matches[i].first.x;
+            A.at<float>(i, 1) = matches[i].first.y;
+
+            B.at<float>(i, 0) = matches[i].second.x;
+            B.at<float>(i, 1) = matches[i].second.y;
+        }
+
+        solve(A.t()*A, A.t()*B, H, DECOMP_CHOLESKY);
+        homography = H;
 	}
+
 };
 
-struct CalculateError {
-	float operator()(Point2f p0, vector<Point2f> &currentParameters) const {
-		Point2f p1 = currentParameters[0];
-		Point2f p2 = currentParameters[1];
+struct CalculateErrorF {
 
-		float dy = p2.y-p1.y;
-		float dx = p2.x - p1.x;
+	float operator()(pair<Point2f, Point2f> match, Mat &H) const {
+        Mat A = Mat(match.first).t();
+        Mat X = A * H;
 
-		return abs(dy * p0.x - dx * p0.y + p2.x * p1.y + p2.y * p1.x)/sqrt(dy*dy + dx*dx);
+        return norm(A-Mat(match.second).t());
 	}
+
 };
 
-// void calculateLine(vector<Point2f> const &points, vector<float> &line) {
-//     float m = (points[0].y - points[1].y)/(points[0].x - points[1].x);
-//     float b = points[0].y - points[0].x*m;
-
-//     line.push_back(m);
-//     line.push_back(b);
-// }
-
-int main()
-{
-	vector<Point2f> cloud;
-	cloud.push_back(Point2f(1, 1));
-	cloud.push_back(Point2f(2, 2));
-
-	vector<Point2f> line;
-	ransac(2, cloud, CalculateLine(), 1, CalculateError(), &iterate_while, line);
-	cout << line << endl;
-
+int main() {
 	Mat I1 = imread("../resources/IMG_0045.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 	Mat I2 = imread("../resources/IMG_0046.JPG", CV_LOAD_IMAGE_GRAYSCALE);
-	//Mat I2 = imread("../IMG_0046r.JPG", CV_LOAD_IMAGE_GRAYSCALE);
+
 	namedWindow("I1", 1);
 	namedWindow("I2", 1);
 	imshow("I1", I1);
 	imshow("I2", I2);
 
 	Ptr<ORB> D=ORB::create();
-	//Ptr<AKAZE> D = AKAZE::create();
 
 	vector<KeyPoint> m1, m2;
 	Mat desc1, desc2;
@@ -75,43 +65,42 @@ int main()
 	imshow("I2", J);
 	waitKey(0);
 
-	BFMatcher M(NORM_L2/*,true*/);
+	BFMatcher M(NORM_L2);
 	vector<DMatch> matches;
 	M.match(desc1, desc2, matches);
-	cout << matches.size() << endl;
 
 	drawMatches(I1, m1, I2, m2, matches, J);
 	resize(J, J, Size(), .5, .5);
 	imshow("Matches", J);
 	waitKey(0);
 
-	vector<Point2f> matches1, matches2;
-	for (int i = 0; i<matches.size(); i++) {
-		matches1.push_back(m1[matches[i].queryIdx].pt);
-		matches2.push_back(m2[matches[i].trainIdx].pt);
+    vector< pair<Point2f, Point2f> > data;
+	for (int i = 0; i < matches.size(); i++) {
+		data.push_back(make_pair(m1[matches[i].trainIdx].pt, m2[matches[i].imgIdx].pt));
 	}
 
-	Mat mask; // Inliers?
-	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
-	cout << H << endl;
-	vector<DMatch> inliers;
-	for (int i = 0; i<matches.size(); i++)
-		if (mask.at<uchar>(i, 0) != 0)
-			inliers.push_back(matches[i]);
+    Mat H;
+    ransac(4, data, CalculateHomographyF(), 3.0, CalculateErrorF(), 10000, H);
 
-	drawMatches(I1, m1, I2, m2, inliers, J);
-	resize(J, J, Size(), .5, .5);
-	imshow("Inliers", J);
-	cout << matches.size() << " matches" << " -> " << inliers.size() << " inliers" << endl;
-	waitKey(0);
+	// Mat mask; // Inliers?
+	// Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
+	// cout << H << endl;
+	// vector<DMatch> inliers;
+	// for (int i = 0; i<matches.size(); i++)
+	// 	if (mask.at<uchar>(i, 0) != 0)
+	// 		inliers.push_back(matches[i]);
 
-	Mat K(2 * I1.cols, I1.rows, CV_8U);
-	warpPerspective(I1, K, Mat::eye(Size(3, 3), CV_32F), Size(2 * I1.cols, I1.rows));
-	warpPerspective(I2, K, H, Size(2 * I1.cols, I1.rows), CV_INTER_LINEAR + CV_WARP_INVERSE_MAP, BORDER_TRANSPARENT);
-	imshow("I1+I2", K);
+	// drawMatches(I1, m1, I2, m2, inliers, J);
+	// resize(J, J, Size(), .5, .5);
+	// imshow("Inliers", J);
+	// cout << matches.size() << " matches" << " -> " << inliers.size() << " inliers" << endl;
+	// waitKey(0);
 
-    stitch();
+	// Mat K(2 * I1.cols, I1.rows, CV_8U);
+	// warpPerspective(I1, K, Mat::eye(Size(3, 3), CV_32F), Size(2 * I1.cols, I1.rows));
+	// warpPerspective(I2, K, H, Size(2 * I1.cols, I1.rows), CV_INTER_LINEAR + CV_WARP_INVERSE_MAP, BORDER_TRANSPARENT);
+	// imshow("I1+I2", K);
 
-	waitKey(0);
+	// waitKey(0);
 	return 0;
 }

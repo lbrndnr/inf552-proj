@@ -2,7 +2,6 @@
 #define RANSAC_H
 
 #include <opencv2/imgproc/imgproc.hpp>
-
 #include <iostream>
 #include <limits>
 
