@@ -6,6 +6,6 @@
 using namespace cv;
 using namespace std;
 
-void stitch();
+void stitch(Mat I1, Mat I2, Mat H, Mat& K);
 
 #endif

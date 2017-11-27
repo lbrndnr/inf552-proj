@@ -11,9 +11,9 @@ using namespace std;
 using namespace cv;
 
 Mat genMatFromPoint(Point2f p) {
-	Mat A = Mat(3, 1, CV_32F);
-	A.at<float>(0, 0) = p.x;
-    A.at<float>(1, 0) = p.y;
+	Mat A = Mat::ones(3, 1, CV_64F);
+	A.at<double>(0, 0) = (double)p.x;
+    A.at<double>(1, 0) = (double)p.y;
 
 	return A;
 }
@@ -21,21 +21,34 @@ Mat genMatFromPoint(Point2f p) {
 struct CalculateHomographyF {
 
 	void operator()(vector< pair<Point2f, Point2f> > const &matches, Mat &homography) const {
-        // Mat A = Mat::ones(matches.size(), 3, CV_32FC1);
-        // Mat B = Mat::ones(matches.size(), 3, CV_32FC1);
-        // Mat H;
+        // Mat P = Mat::zeros(2*matches.size(), 9, CV_32FC1);
+		// Mat b = Mat::zeros(2*matches.size(), 1, CV_32FC1);
+		// Mat H;
 
-        // for (int i = 0; i < matches.size(); i++) {
-        //     A.at<float>(i, 0) = matches[i].first.x/800.0;
-        //     A.at<float>(i, 1) = matches[i].first.y/533.0;
+		// for (int i = 0; i < matches.size(); i++) {
+		// 	Point2f p1 = matches[i].first, p2 = matches[i].second;
 
-        //     B.at<float>(i, 0) = matches[i].second.x/800.0;
-        //     B.at<float>(i, 1) = matches[i].second.y/533.0;
-        // }
+		// 	int r = 2*i;
+		// 	P.at<float>(r, 0) = -p1.x;
+		// 	P.at<float>(r, 1) = -p1.y;
+		// 	P.at<float>(r, 2) = -1.0;
+		// 	P.at<float>(r, 6) = p1.x*p2.x;
+		// 	P.at<float>(r, 7) = p1.y*p2.x;
+		// 	P.at<float>(r, 8) = p2.x;
 
-        // solve(A.t()*A, A.t()*B, H, DECOMP_CHOLESKY);
+		// 	r += 1;
+		// 	P.at<float>(r, 3) = -p1.x;
+		// 	P.at<float>(r, 4) = -p1.y;
+		// 	P.at<float>(r, 5) = -1.0;
+		// 	P.at<float>(r, 6) = p1.x*p2.y;
+		// 	P.at<float>(r, 7) = p1.y*p2.x;
+		// 	P.at<float>(r, 8) = p2.y;
+		// }
 
-        // homography = H;
+		// solve(P.t()*P, P.t()*b, H, DECOMP_SVD);
+
+		// H = H.reshape(1, 3);
+		// cout << H << endl;
 
 		vector<Point2f> src, dst;
 
@@ -54,31 +67,13 @@ struct CalculateHomographyF {
 struct CalculateErrorF {
 
 	float operator()(pair<Point2f, Point2f> match, Mat &H) const {
-        // Mat A = genMatFromPoint(match.first);
+        Mat A = genMatFromPoint(match.first);
+		Mat B = genMatFromPoint(match.second);
+        Mat X = H*B;
 
-		// cout << A << endl;
-        // Mat X = H*A;
+		X /= X.at<double>(2, 0);
 
-		// cout << A << endl << genMatFromPoint(match.second) << endl;
-
-        // return norm(A-genMatFromPoint(match.second));
-
-		Point2f point1 = match.first;
-		Point2f point2 = match.second;
-		float sub = (float) (H.at<double>(2, 0)*point2.x + H.at<double>(2, 1)*point2.y + H.at<double>(2, 2));
-
-		if (sub == 0.){
-			//cout << "Point a l'infini !" << endl;
-			return DBL_MAX;
-		}
-
-		//H ne peut etre accedee qu'en double, il faut donc cast pour avoir des floats
-		Point2f imp2(
-				(float)(H.at<double>(0, 0)*point2.x + H.at<double>(0, 1)*point2.y + H.at<double>(0, 2)) / sub,
-				(float)(H.at<double>(1, 0)*point2.x + H.at<double>(1, 1)*point2.y + H.at<double>(1, 2)) / sub
-		);
-
-		return pow(point1.x-imp2.x,2)+pow(point1.y-imp2.y,2);
+        return norm(X, A, NORM_L2);
 	}
 
 };
@@ -149,9 +144,9 @@ int main() {
 	// cout << matches.size() << " matches" << " -> " << inliers.size() << " inliers" << endl;
 	// waitKey(0);
 
-	Mat K(2 * I1.cols, I1.rows, CV_8U);
-	warpPerspective(I1, K, Mat::eye(Size(3, 3), CV_32F), Size(2 * I1.cols, I1.rows));
-	warpPerspective(I2, K, H, Size(2 * I1.cols, I1.rows), CV_INTER_LINEAR + CV_WARP_INVERSE_MAP, BORDER_TRANSPARENT);
+	Mat K;
+	stitch(I1, I2, H, K);
+
 	imshow("I1+I2", K);
 	waitKey(0);
 
