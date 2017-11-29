@@ -20,6 +20,12 @@
         "stdexcept": "cpp",
         "typeinfo": "cpp",
         "algorithm": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "ostream": "cpp",
+        "chrono": "cpp",
+        "random": "cpp",
+        "*.tpp": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp"
     }
 }
