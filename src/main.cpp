@@ -21,43 +21,64 @@ Mat genMatFromPoint(Point2f p) {
 struct CalculateHomographyF {
 
 	void operator()(vector< pair<Point2f, Point2f> > const &matches, Mat &homography) const {
-        // Mat P = Mat::zeros(2*matches.size(), 9, CV_32FC1);
-		// Mat b = Mat::zeros(2*matches.size(), 1, CV_32FC1);
-		// Mat H;
+        Mat A = Mat::zeros(2*matches.size(), 8, CV_64FC1);
+		Mat b(matches.size() * 2, 1, CV_64FC1);
 
-		// for (int i = 0; i < matches.size(); i++) {
-		// 	Point2f p1 = matches[i].first, p2 = matches[i].second;
+		for (int i = 0; i < matches.size(); i++) {
+			Point2f p1 = matches[i].first, p2 = matches[i].second;
 
-		// 	int r = 2*i;
-		// 	P.at<float>(r, 0) = -p1.x;
-		// 	P.at<float>(r, 1) = -p1.y;
-		// 	P.at<float>(r, 2) = -1.0;
-		// 	P.at<float>(r, 6) = p1.x*p2.x;
-		// 	P.at<float>(r, 7) = p1.y*p2.x;
-		// 	P.at<float>(r, 8) = p2.x;
+			int r = 2*i;
+			A.at<double>(r, 0) = (double)p1.x;
+			A.at<double>(r, 1) = (double)p1.y;
+			A.at<double>(r, 2) = (double)1.0;
+			A.at<double>(r, 6) = (double)-p1.x*p2.x;
+			A.at<double>(r, 7) = (double)-p1.y*p2.x;
+			b.at<double>(r, 0) = (double)p2.x;
 
-		// 	r += 1;
-		// 	P.at<float>(r, 3) = -p1.x;
-		// 	P.at<float>(r, 4) = -p1.y;
-		// 	P.at<float>(r, 5) = -1.0;
-		// 	P.at<float>(r, 6) = p1.x*p2.y;
-		// 	P.at<float>(r, 7) = p1.y*p2.x;
-		// 	P.at<float>(r, 8) = p2.y;
-		// }
+			r += 1;
+			A.at<double>(r, 3) = (double)p1.x;
+			A.at<double>(r, 4) = (double)p1.y;
+			A.at<double>(r, 5) = (double)1.0;
+			A.at<double>(r, 6) = (double)-p1.x*p2.y;
+			A.at<double>(r, 7) = (double)-p1.y*p2.y;
+			b.at<double>(r, 0) = (double)p2.y;
+		}
+
+		Mat H8;
+		solve(A, b, H8);
+
+		Mat H = Mat::ones(9, 1, CV_64FC1);
+		for (int i = 0; i < 8; i++) {
+			H.at<double>(i, 0) = H8.at<double>(i, 0);
+		}
+
+		H = H.reshape(1, 3);
+
+				cout << b << endl;
+		cout << H << endl;
+		exit(0);
+
+
+		// SVD svd(P, cv::SVD::FULL_UV); // constructor
+		// // cout << svd.vt << endl;
+		// Mat V = svd.vt.t();
+		// H = V.col(V.cols-1);
+
+		// cout << H << endl;
 
 		// solve(P.t()*P, P.t()*b, H, DECOMP_SVD);
 
-		// H = H.reshape(1, 3);
 		// cout << H << endl;
+		// exit(0);
 
-		vector<Point2f> src, dst;
+		// vector<Point2f> src, dst;
 
-		for (unsigned int i = 0; i < matches.size(); i++){
-			src.push_back(matches[i].first);
-			dst.push_back(matches[i].second);
-		}
+		// for (unsigned int i = 0; i < matches.size(); i++){
+		// 	src.push_back(matches[i].first);
+		// 	dst.push_back(matches[i].second);
+		// }
 
-		Mat H = findHomography(dst, src);
+		// Mat H = findHomography(dst, src);
 
 		homography = H;
 	}
