@@ -26,6 +26,7 @@
         "random": "cpp",
         "*.tpp": "cpp",
         "tuple": "cpp",
-        "type_traits": "cpp"
+        "type_traits": "cpp",
+        "__locale": "cpp"
     }
 }
