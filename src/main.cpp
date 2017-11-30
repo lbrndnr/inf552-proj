@@ -18,7 +18,7 @@ Mat genMatFromPoint(Point2f p) {
 	return A;
 }
 
-struct CalculateHomographyF {
+struct CalculateHomography {
 
 	void operator()(vector< pair<Point2f, Point2f> > const &matches, Mat &homography) const {
 		assert(matches.size() == 4);
@@ -62,9 +62,39 @@ struct CalculateHomographyF {
 
 };
 
-struct CalculateErrorF {
+struct ChooseGoodSubset {
 
-	float operator()(pair<Point2f, Point2f> match, Mat &H) const {
+	void operator()(vector< pair<Point2f, Point2f> > const &data, int cardinality, vector< pair<Point2f, Point2f> >& randomSubset) const {
+        // int  m = data.size();
+        // vector<Data_T> subset;
+        // vector<int> indices;
+        // indices.push_back(rand() % m);
+        // subset.push_back(data[indices[0]]);
+
+        // for (int j = 1; j < cardinality; j++) {
+        //     bool isDiff = false;
+        //     int currentRandom = 0;
+        //     while(!isDiff){
+        //         currentRandom = rand() % m;
+        //         isDiff = true;
+        //         for(int k=0; k<j && isDiff;k++) {
+        //             if (currentRandom == indices[k]) {
+        //                 isDiff = false;
+        //             }
+        //         }
+        //     }
+        //     indices.push_back(currentRandom);
+        //     subset.push_back(data[indices[j]]);
+        // }
+
+        // randomSubset = subset;
+	}
+
+};
+
+struct CalculateError {
+
+	float operator()(pair<Point2f, Point2f> const &match, Mat &H) const {
         Mat A = genMatFromPoint(match.first);
 		Mat B = genMatFromPoint(match.second);
         Mat X = H*B;
@@ -122,7 +152,7 @@ int main() {
 	Mat mask; // Inliers?
 	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
 
-		vector<DMatch> inliers;
+	vector<DMatch> inliers;
 	for (int i = 0; i<matches.size(); i++)
 		if (mask.at<uchar>(i, 0) != 0)
 			inliers.push_back(matches[i]);
@@ -136,7 +166,7 @@ int main() {
 
 
     // Mat H;
-    ransac(4, data, CalculateHomographyF(), 20.0, CalculateErrorF(), 2000, H);
+    ransac(4, data, CalculateHomography(), ChooseGoodSubset(), 20.0, CalculateError(), 2000, H);
 	
 	
 	cout << H << endl;
