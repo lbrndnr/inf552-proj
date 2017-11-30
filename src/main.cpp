@@ -3,6 +3,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <iostream>
+#include <ctime>
 
 #include "RANSAC.h"
 #include "pano.h"
@@ -145,7 +146,16 @@ int main() {
 	}
 
 	Mat mask; // Inliers?
-	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
+
+	// time. It can vary if you have multiple cores running at the same time so not really real time.
+	double elapsed_secs;
+	clock_t begin, end;
+	begin = clock();
+	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask, 1000);
+	end = clock();
+	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	cout << "Elapsed time with findH" << elapsed_secs << endl;
+	// Diego: 0.314
 
 		vector<DMatch> inliers;
 	for (int i = 0; i<matches.size(); i++)
@@ -156,13 +166,17 @@ int main() {
 	Mat K1;
 	stitch(I1, I2, H, K1);
 
-	imshow("I1+I2 findHomography", K1);
+	imshow("I1+I2 using findHomography", K1);
 	waitKey(0);
 
 
     // Mat H;
-    ransac(4, data, CalculateHomographyF(), 20.0, CalculateErrorF(), 2000, H);
-	
+	begin = clock();
+	ransac(4, data, CalculateHomographyF(), 20.0, CalculateErrorF(), 2000, H);
+	end = clock();
+	elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	cout << "Elapsed time with our ransac" << elapsed_secs << endl;
+	//Diego: Start: 14.36
 	
 	cout << H << endl;
 
@@ -175,17 +189,26 @@ int main() {
 	Mat K2;
 	stitch(I1, I2, H, K2);
 
-	// why is this needed?
+	// why is this needed? Diego: don't know but should probably go in the "caculate H" i guess? 
 	H = H.inv();
 	cout << H << endl;
 	Mat K3;
 	stitch(I1, I2, H, K3);
 
-	imshow("I1+I2", K2);
-	waitKey(0);
+	//imshow("I1+I2 using our homography without inv", K2);
+	//waitKey(0);
 
-	imshow("I1+I2 inv", K3);
+	imshow("I1+I2 inv with 2000steps", K3);
 	waitKey(0);
+	//Mat H2;
+	//ransac(4, data, CalculateHomographyF(), 20.0, CalculateErrorF(), 1000, H2);
+	//H2 = H2.inv();
+	//cout << H2 << endl;
+	//Mat K4;
+	//stitch(I1, I2, H2, K4);
+	//imshow("I1+I2 inv with 1000steps", K4);
+	//waitKey(0);
+
 
 	return 0;
 }

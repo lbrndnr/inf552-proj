@@ -1,3 +1,6 @@
+#include <ctime>
+// TODO
+
 using namespace cv;
 using namespace std;
 
@@ -38,12 +41,17 @@ void ransac(int minNumberOfDataPoints,
     int maxNumberOfInliers = 0;
     int i = 0;
 
+	double elapsed_secs, elapsed_secs_rand =0, elapsed_secs_homography=0, elapsed_secs_error=0;
+	clock_t begin, end;
+
     while(whileCondition(i)) {
         vector<Data_T> currentData;
         vector<int> indices;
         indices.push_back(rand() % m);
         currentData.push_back(data[indices[0]]);
 
+		
+		begin = clock();
         for (int j = 1; j < minNumberOfDataPoints; j++) {
             bool isDiff = false;
             int currentRandom = 0;
@@ -59,10 +67,19 @@ void ransac(int minNumberOfDataPoints,
             indices.push_back(currentRandom);
             currentData.push_back(data[indices[j]]);
         }
+		end = clock();
+		elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		elapsed_secs_rand+=elapsed_secs;
 
+		
+		begin = clock();
         Parameter_T currentParameters;
         calculateParameters(currentData, currentParameters);
-
+		end = clock();
+		elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		elapsed_secs_homography+=elapsed_secs;
+		
+		begin = clock();
         int numberOfInliers = 0;
         for (int j = 0; j < data.size(); j++) {
             float error = calculateError(data[j], currentParameters);
@@ -70,6 +87,9 @@ void ransac(int minNumberOfDataPoints,
                 numberOfInliers++;
             }
         }
+		end = clock();
+		elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		elapsed_secs_error+=elapsed_secs;
 
         if (numberOfInliers >= maxNumberOfInliers) {
             maxNumberOfInliers = numberOfInliers;
@@ -78,4 +98,7 @@ void ransac(int minNumberOfDataPoints,
 
         i++;
     }
+	cout << "Elapsed time with rand" << elapsed_secs_rand << endl;
+	cout << "Elapsed time with homography" << elapsed_secs_homography << endl;
+	cout << "Elapsed time with checking error" << elapsed_secs_error << endl;
 }
