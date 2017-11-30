@@ -21,27 +21,29 @@ Mat genMatFromPoint(Point2f p) {
 struct CalculateHomographyF {
 
 	void operator()(vector< pair<Point2f, Point2f> > const &matches, Mat &homography) const {
-        Mat A = Mat::zeros(2*matches.size(), 8, CV_64FC1);
-		Mat b(matches.size() * 2, 1, CV_64FC1);
+		assert(matches.size() == 4);
 
-		for (int i = 0; i < matches.size(); i++) {
+        Mat A = Mat::zeros(8, 8, CV_64FC1);
+		Mat b(8, 1, CV_64FC1);
+
+		for (int i = 0; i < 4; i++) {
 			Point2f p1 = matches[i].first, p2 = matches[i].second;
 
 			int r = 2*i;
-			A.at<double>(r, 0) = (double)p1.x;
-			A.at<double>(r, 1) = (double)p1.y;
+			A.at<double>(r, 0) = (double)p2.x;
+			A.at<double>(r, 1) = (double)p2.y;
 			A.at<double>(r, 2) = (double)1.0;
-			A.at<double>(r, 6) = (double)-p1.x*p2.x;
-			A.at<double>(r, 7) = (double)-p1.y*p2.x;
-			b.at<double>(r, 0) = (double)p2.x;
+			A.at<double>(r, 6) = (double)-p2.x*p1.x;
+			A.at<double>(r, 7) = (double)-p2.y*p1.x;
+			b.at<double>(r, 0) = (double)p1.x;
 
 			r += 1;
-			A.at<double>(r, 3) = (double)p1.x;
-			A.at<double>(r, 4) = (double)p1.y;
+			A.at<double>(r, 3) = (double)p2.x;
+			A.at<double>(r, 4) = (double)p2.y;
 			A.at<double>(r, 5) = (double)1.0;
-			A.at<double>(r, 6) = (double)-p1.x*p2.y;
-			A.at<double>(r, 7) = (double)-p1.y*p2.y;
-			b.at<double>(r, 0) = (double)p2.y;
+			A.at<double>(r, 6) = (double)-p2.x*p1.y;
+			A.at<double>(r, 7) = (double)-p2.y*p1.y;
+			b.at<double>(r, 0) = (double)p1.y;
 		}
 
 		Mat H8;
@@ -52,35 +54,7 @@ struct CalculateHomographyF {
 			H.at<double>(i, 0) = H8.at<double>(i, 0);
 		}
 
-		H = H.reshape(1, 3);
-
-				cout << b << endl;
-		cout << H << endl;
-		exit(0);
-
-
-		// SVD svd(P, cv::SVD::FULL_UV); // constructor
-		// // cout << svd.vt << endl;
-		// Mat V = svd.vt.t();
-		// H = V.col(V.cols-1);
-
-		// cout << H << endl;
-
-		// solve(P.t()*P, P.t()*b, H, DECOMP_SVD);
-
-		// cout << H << endl;
-		// exit(0);
-
-		// vector<Point2f> src, dst;
-
-		// for (unsigned int i = 0; i < matches.size(); i++){
-		// 	src.push_back(matches[i].first);
-		// 	dst.push_back(matches[i].second);
-		// }
-
-		// Mat H = findHomography(dst, src);
-
-		homography = H;
+		homography= H.reshape(1, 3);
 	}
 
 };
