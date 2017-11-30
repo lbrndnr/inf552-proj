@@ -15,6 +15,33 @@ public:
 
 };
 
+template <class Data_T>
+void selectRandomSubset(vector<Data_T> data, int cardinality, vector<Data_T>& randomSubset) {
+    int  m = data.size();
+    vector<Data_T> subset;
+    vector<int> indices;
+    indices.push_back(rand() % m);
+    subset.push_back(data[indices[0]]);
+
+    for (int j = 1; j < cardinality; j++) {
+        bool isDiff = false;
+        int currentRandom = 0;
+        while(!isDiff){
+            currentRandom = rand() % m;
+            isDiff = true;
+            for(int k=0; k<j && isDiff;k++) {
+                if (currentRandom == indices[k]) {
+                    isDiff = false;
+                }
+            }
+        }
+        indices.push_back(currentRandom);
+        subset.push_back(data[indices[j]]);
+    }
+
+    randomSubset = subset;
+}
+
 template <class Parameter_T, class Data_T, class CalculateParameterF, class CalculateErrorF>
 void ransac(int minNumberOfDataPoints,
         vector<Data_T> data,
@@ -34,34 +61,16 @@ void ransac(int minNumberOfDataPoints,
         CalculateErrorF calculateError, 
         IterateConditionF whileCondition,
         Parameter_T& bestFittingParameters) {
-    int m = data.size();
+    assert(minNumberOfDataPoints > 0);
     int maxNumberOfInliers = 0;
     int i = 0;
 
     while(whileCondition(i)) {
-        vector<Data_T> currentData;
-        vector<int> indices;
-        indices.push_back(rand() % m);
-        currentData.push_back(data[indices[0]]);
-
-        for (int j = 1; j < minNumberOfDataPoints; j++) {
-            bool isDiff = false;
-            int currentRandom = 0;
-            while(!isDiff){
-                currentRandom = rand() % m;
-                isDiff = true;
-                for(int k=0; k<j && isDiff;k++) {
-                    if (currentRandom == indices[k]) {
-                        isDiff = false;
-                    }
-                }
-            }
-            indices.push_back(currentRandom);
-            currentData.push_back(data[indices[j]]);
-        }
+        vector<Data_T> randomSubset;
+        selectRandomSubset(data, minNumberOfDataPoints, randomSubset);
 
         Parameter_T currentParameters;
-        calculateParameters(currentData, currentParameters);
+        calculateParameters(randomSubset, currentParameters);
 
         int numberOfInliers = 0;
         for (int j = 0; j < data.size(); j++) {
@@ -71,7 +80,7 @@ void ransac(int minNumberOfDataPoints,
             }
         }
 
-        if (numberOfInliers >= maxNumberOfInliers) {
+        if (numberOfInliers > maxNumberOfInliers) {
             maxNumberOfInliers = numberOfInliers;
             bestFittingParameters = currentParameters;
         }
