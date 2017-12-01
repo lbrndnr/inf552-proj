@@ -64,30 +64,71 @@ struct CalculateHomography {
 
 struct ChooseGoodSubset {
 
+	bool checkSubset(vector<Point2f> const &points) const {
+		const float threshold = 0.996f;
+		int m = points.size();
+		for (int j = 0; j < m-1; j++) {
+			Point2f d1 = points[j]-points[m-1];
+			float n1 = d1.x * d1.x + d1.y * d1.y;
+
+			for (int k = 0; k < j; k++) {
+				Point2f d2 = points[k]-points[m-1];
+				float denom = (d2.x*d2.x + d2.y*d2.y)*n1;
+				float num = d1.x*d2.x + d1.y*d2.y;
+
+				if (num*num > threshold*threshold*denom) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
 	void operator()(vector< pair<Point2f, Point2f> > const &data, int cardinality, vector< pair<Point2f, Point2f> >& randomSubset) const {
-        // int  m = data.size();
-        // vector<Data_T> subset;
-        // vector<int> indices;
-        // indices.push_back(rand() % m);
-        // subset.push_back(data[indices[0]]);
+        int  m = data.size();
+        vector<Point2f> firstSubset;
+		vector<Point2f> secondSubset;
+        vector<int> indices;
+        indices.push_back(rand() % m);
+        firstSubset.push_back(data[indices[0]].first);
+		secondSubset.push_back(data[indices[0]].second);
 
-        // for (int j = 1; j < cardinality; j++) {
-        //     bool isDiff = false;
-        //     int currentRandom = 0;
-        //     while(!isDiff){
-        //         currentRandom = rand() % m;
-        //         isDiff = true;
-        //         for(int k=0; k<j && isDiff;k++) {
-        //             if (currentRandom == indices[k]) {
-        //                 isDiff = false;
-        //             }
-        //         }
-        //     }
-        //     indices.push_back(currentRandom);
-        //     subset.push_back(data[indices[j]]);
-        // }
+		int j = 1;
+		while (j < cardinality) {
+			bool isDiff = false;
+            int currentRandom = 0;
+            while(!isDiff){
+                currentRandom = rand() % m;
+                isDiff = true;
+                for(int k=0; k<j && isDiff;k++) {
+                    if (currentRandom == indices[k]) {
+                        isDiff = false;
+                    }
+                }
+            }
+            indices.push_back(currentRandom);
+            firstSubset.push_back(data[indices[j]].first);
+			secondSubset.push_back(data[indices[j]].second);
 
-        // randomSubset = subset;
+			if (!this->checkSubset(firstSubset) || !this->checkSubset(secondSubset)) {
+				int idx = rand() % j;
+				indices.erase(indices.begin() + idx);
+				firstSubset.erase(firstSubset.begin() + idx);
+				secondSubset.erase(secondSubset.begin() + idx);
+
+				continue;
+			}
+
+			j++;
+		}
+
+		vector< pair<Point2f, Point2f> > subset;
+		for (int i = 0; i < cardinality; i++) {
+			subset.push_back(make_pair(firstSubset[i], secondSubset[i]));
+		}
+
+        randomSubset = subset;
 	}
 
 };
@@ -150,7 +191,7 @@ int main() {
 	}
 
 	Mat mask; // Inliers?
-	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
+	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask, 500);
 
 	vector<DMatch> inliers;
 	for (int i = 0; i<matches.size(); i++)
@@ -166,7 +207,7 @@ int main() {
 
 
     // Mat H;
-    ransac(4, data, CalculateHomography(), ChooseGoodSubset(), 20.0, CalculateError(), 2000, H);
+    ransac(4, data, CalculateHomography(), ChooseGoodSubset(), 3.0, CalculateError(), 500, H);
 	
 	
 	cout << H << endl;

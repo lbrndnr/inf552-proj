@@ -27,6 +27,7 @@
         "*.tpp": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "__bit_reference": "cpp"
     }
 }
