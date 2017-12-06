@@ -19,6 +19,6 @@ void stitch(Mat I1, Mat I2, Mat H, Mat& K) {
     // I2.copyTo(area2);
 
     K = Mat(2 * I1.cols, I1.rows, I1.type());
-	warpPerspective(I1, K, Mat::eye(Size(3, 3), CV_32F), Size(2 * I1.cols, I1.rows));
-	warpPerspective(I2, K, H, Size(2 * I1.cols, I1.rows), CV_INTER_LINEAR + CV_WARP_INVERSE_MAP, BORDER_TRANSPARENT);
+	warpPerspective(I1, K, Mat::eye(Size(3, 3), CV_32F), Size(20 * I2.cols, I1.rows));
+	warpPerspective(I2, K, H, Size(20 * I2.cols, I1.rows), INTER_NEAREST + CV_WARP_INVERSE_MAP, BORDER_TRANSPARENT);
 }

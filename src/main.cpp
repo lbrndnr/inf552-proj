@@ -124,17 +124,35 @@ Mat panorama(const vector<Mat>& pictures) {
 	vector<Mat> homographies(size);
 	Mat H0 = Mat::eye(3, 3, CV_64F);
 	homographies[0] = H0;
+	vector<Mat> homographiesContiguous(size);
+	homographiesContiguous[0] = H0;
+
+	Mat canvas = image0;
 
 	for (int i = 1; i < size; i++) {
-		Mat Ii = pictures[i - 1];
+		//Mat Ii = pictures[i - 1];
+		Mat Ii = canvas;
 		Mat Ij = pictures[i];
 
 		// Copy paste. TODO Put this on function and re use matches if can.
+		//namedWindow("I1", 1);
+		//namedWindow("I2", 1);
+		//imshow("I1", Ii);
+		//imshow("I2", Ij);
+
 		Ptr<AKAZE> D = AKAZE::create();
 		vector<KeyPoint> m1, m2;
 		Mat desc1, desc2;
 		D->detectAndCompute(Ii, Mat(), m1, desc1);
 		D->detectAndCompute(Ij, Mat(), m2, desc2);
+
+		Mat J;
+		//drawKeypoints(Ii, m1, J, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+		//imshow("I1", J);
+		//drawKeypoints(Ij, m2, J, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+		//imshow("I2", J);
+		//waitKey(0);
+
 		BFMatcher M(NORM_L2);
 		vector<DMatch> matches;
 		M.match(desc1, desc2, matches);
@@ -142,28 +160,53 @@ Mat panorama(const vector<Mat>& pictures) {
 		for (int i = 0; i < matches.size(); i++) {
 			data.push_back(make_pair(m1[matches[i].queryIdx].pt, m2[matches[i].trainIdx].pt));
 		}
+		drawMatches(Ii, m1, Ij, m2, matches, J);
+		resize(J, J, Size(), .5, .5);
+		//imshow("Matches", J);
+		//waitKey(0);
 		vector<Point2f> matches1, matches2;
-		for (int i = 0; i<matches.size(); i++) {
-			int distance = abs(m1[matches[i].queryIdx].pt.x - m2[matches[i].trainIdx].pt.x);
-			if ( distance < Ii.cols*1.5) {
-				matches1.push_back(m1[matches[i].queryIdx].pt);
-				matches2.push_back(m2[matches[i].trainIdx].pt);
+		vector<DMatch> matchesResult;
+		float righestMatch = 0;
+		
+		for (int indexMatches = 0; indexMatches < matches.size(); indexMatches++) {
+			float currentX = m1[matches[indexMatches].queryIdx].pt.x;
+			if (currentX > righestMatch) {
+				righestMatch = currentX;
 			}
 		}
+		for (int indexMatches = 0; indexMatches<matches.size(); indexMatches++) {
+			//int distance = abs(m1[matches[indexMatches].queryIdx].pt.x - m2[matches[indexMatches].trainIdx].pt.x);
+			float currentX = m1[matches[indexMatches].queryIdx].pt.x;
+			if (currentX > righestMatch - (Ij.cols)) {
+			//}
+			//if ( distance < (Ij.cols*1.5) + (Ii.cols-righestMatch)) {
+				matches1.push_back(m1[matches[indexMatches].queryIdx].pt);
+				matches2.push_back(m2[matches[indexMatches].trainIdx].pt);
+				matchesResult.push_back(matches[indexMatches]);
+			}
+		}
+		//drawMatches(Ii, m1, Ij, m2, matchesResult, J);
+		//resize(J, J, Size(), .5, .5);
+		//imshow("newMatches!", J);
+		//waitKey(0);
+
 		Mat mask; // Inliers?
 		Mat Hji = findHomography(matches1, matches2, RANSAC, 3, mask);
+		homographiesContiguous[i] = Hji;
 		Mat K;
 		stitch(Ii, Ij, Hji, K);
-		imshow("Panorama a 2. " + to_string(26+i-1) + "+" + to_string(26 + i), K);
-		waitKey(0);
+//		imshow("Panorama a 2. " + to_string(i-1) + "+" + to_string( i), K);
+		//imshow("Panorama a 2.", K);
+		//waitKey(0);
 
 		Mat Hi = homographies[i-1];
 		Mat Hj = Hi * Hji;
 		homographies[i] = Hj;
 
-
+		canvas = K;
+		imwrite("../resources/panoramaResult" + to_string(i) + ".jpg", K);
 	}
-
+	/*
 	Mat K = image0;
 	
 	for (int i = 1; i < size; i++) {
@@ -174,12 +217,19 @@ Mat panorama(const vector<Mat>& pictures) {
 		//imshow("Panorama", Kaux);
 		//waitKey(0);
 		K = Kaux;
-
+		imwrite("../resources/panoramaResult" + to_string(i) + ".jpg", K);
 	}
-	imwrite("../resources/panoramaResult.jpg", K);
-	return K;
+	imwrite("../resources/panoramaResultFinal.jpg", K);
+	*/
+
+	//Mat lastImage = pictures.at(size - 1);
+
+
+
+	return canvas;
 }
 
+/*
 // TODO make it work or drop it
 Mat panoramaUnordered(const vector<Mat>& pictures) {
 	int size = pictures.size();
@@ -270,13 +320,18 @@ Mat panoramaUnordered(const vector<Mat>& pictures) {
 
 	
 }
-
+*/
 
 
 int main() {
 	vector<Mat> pictures;
-	//from 26 to 60
-	for (int i = 26; i <= 60; i++) {
+	//from 29 to 60 and then 26-28
+	for (int i = 51; i <= 60; i++) {
+		string fileName = "../resources/pano1/IMG_00" + to_string(i) + ".JPG";
+		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
+		pictures.push_back(currentImage);
+	}
+	for (int i = 26; i <= 28; i++) {
 		string fileName = "../resources/pano1/IMG_00" + to_string(i) + ".JPG";
 		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
 		pictures.push_back(currentImage);
