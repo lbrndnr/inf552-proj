@@ -130,7 +130,7 @@ Mat panorama(const vector<Mat>& pictures) {
 		Mat Ij = pictures[i];
 
 		// Copy paste. TODO Put this on function and re use matches if can.
-		Ptr<ORB> D = ORB::create();
+		Ptr<AKAZE> D = AKAZE::create();
 		vector<KeyPoint> m1, m2;
 		Mat desc1, desc2;
 		D->detectAndCompute(Ii, Mat(), m1, desc1);
@@ -151,7 +151,7 @@ Mat panorama(const vector<Mat>& pictures) {
 			}
 		}
 		Mat mask; // Inliers?
-		Mat Hji = findHomography(matches1, matches2, RANSAC, 8, mask);
+		Mat Hji = findHomography(matches1, matches2, RANSAC, 3, mask);
 		Mat K;
 		stitch(Ii, Ij, Hji, K);
 		imshow("Panorama a 2. " + to_string(26+i-1) + "+" + to_string(26 + i), K);
