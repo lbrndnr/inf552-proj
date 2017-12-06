@@ -1,5 +1,5 @@
-using namespace cv;
 using namespace std;
+using namespace cv;
 
 struct IterateCondition {
 
@@ -64,6 +64,8 @@ void ransac(int minNumberOfDataPoints,
     assert(minNumberOfDataPoints > 0);
     int maxNumberOfInliers = 0;
     int i = 0;
+	int minNumberOfInliers = data.size()*0.1;
+	float minError = 20000000;
 
     while(whileCondition(i)) {
         vector<Data_T> randomSubset;
@@ -73,18 +75,31 @@ void ransac(int minNumberOfDataPoints,
         calculateParameters(randomSubset, currentParameters);
 
         int numberOfInliers = 0;
+		vector<Data_T> inliers;
+		float errorAcumulated = 0.0;
         for (int j = 0; j < data.size(); j++) {
             float error = calculateError(data[j], currentParameters);
             if (error <= errorThreshold) {
+				errorAcumulated+=error;
                 numberOfInliers++;
+				inliers.push_back(data[j]);
             }
         }
-
-        if (numberOfInliers > maxNumberOfInliers) {
-            maxNumberOfInliers = numberOfInliers;
-            bestFittingParameters = currentParameters;
+        if (numberOfInliers > minNumberOfInliers) {
+			errorAcumulated /= numberOfInliers;
+			if(maxNumberOfInliers < numberOfInliers){
+				maxNumberOfInliers = numberOfInliers;
+				minError = errorAcumulated;
+				bestFittingParameters = currentParameters;
+			} else{
+				if(errorAcumulated < minError && maxNumberOfInliers == numberOfInliers){
+					maxNumberOfInliers = numberOfInliers;
+					minError = errorAcumulated;
+					bestFittingParameters = currentParameters;
+				}
+			}
+			
         }
-
         i++;
     }
 }
