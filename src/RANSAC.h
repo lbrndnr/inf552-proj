@@ -17,13 +17,14 @@ void ransac(int minNumberOfDataPoints,
         int maxNumberOfIterations,
         Parameter_T& bestFittingParameters);
 
-template <class Parameter_T, class Data_T, class CalculateParameterF, class IterateConditionF, class CalculateErrorF>
+template <class Parameter_T, class Data_T, class ChooseSubsetF, class CalculateParameterF, class CalculateErrorF>
 void ransac(int minNumberOfDataPoints,
         vector<Data_T> data,
         CalculateParameterF calculateParameters, 
+        ChooseSubsetF chooseSubset,
         double errorThreshold, 
         CalculateErrorF calculateError, 
-        IterateConditionF whileCondition,
+        int maxNumberOfIterations,
         Parameter_T& bestFittingParameters);
 
 // In order to separate the template declaration from its implementation
