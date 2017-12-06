@@ -135,7 +135,7 @@ struct ChooseGoodSubset {
 
 struct CalculateError {
 
-	float operator()(pair<Point2f, Point2f> const &match, Mat &H) const {
+	float operator()(pair<Point2f, Point2f> const &match, Mat const &H) const {
         Mat A = genMatFromPoint(match.first);
 		Mat B = genMatFromPoint(match.second);
         Mat X = H*B;

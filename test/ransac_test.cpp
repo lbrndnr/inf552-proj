@@ -7,50 +7,83 @@
 using namespace std;
 using namespace cv;
 
+struct Line {
+
+	float a, b, c;
+
+	Line(float a, float b, float c): a(a), b(b), c(c) {}
+	Line(): a(0), b(0), c(0) {}
+
+};
+
 struct CalculateLine {
-	void operator()(vector<Point2f> const &points, vector<Point2f> &line) const {
-		line = points;
+	void operator()(vector<Point2f> const &points, Line &line) const {
+		float m = (points[1].y - points[0].y)/(points[1].x - points[0].x);
+		float q = points[0].y - points[0].x*m;
+
+		line = Line(m, -1, q);
 	}
 };
 
 struct CalculateError {
-	float operator()(Point2f p0, vector<Point2f> &currentParameters) const {
-		Point2f p1 = currentParameters[0];
-		Point2f p2 = currentParameters[1];
-
-		float dy = p2.y-p1.y;
-		float dx = p2.x - p1.x;
-
-		return abs(dy * p0.x - dx * p0.y + p2.x * p1.y + p2.y * p1.x)/sqrt(dy*dy + dx*dx);
+	float operator()(Point2f p0, Line const &line) const {
+		float denum = sqrt(pow(line.a, 2) + pow(line.b, 2));
+		return abs(line.a * p0.x + line.b * p0.y + line.c)/denum;
 	}
 };
 
-void testRANSAC() {
+float randomBetween(float a, float b) {
+    float random = ((float) rand()) / (float) RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
+
+void testRandomRANSAC() {
+	cout << "Test RANSAC on a random cloud" << endl;
+
     vector<Point2f> cloud;
-	int axis = 100;
+	int total = 1000;
+
+	// Add outliers
+	for (int i = 0; i < total; i++) {
+		cloud.push_back(Point2f(randomBetween(0, total), randomBetween(0, total)));
+	}
+
+	Line line;
+	ransac(2, cloud, CalculateLine(), 1, CalculateError(), 150, line);
+	cout << line.a << "," << line.b << "," << line.c << endl;
+}
+
+void testRANSAC(float outlierRatio) {
+	vector<Point2f> cloud;
+	int total = 1000;
+	int numberOfInliers = total * (1.0 - outlierRatio);
+	int numberOfOutliers = total * outlierRatio;
+
+	cout << "Test RANSAC with " << numberOfOutliers << " outliers and " << numberOfInliers << " inliers"  << endl;
+
 
 	// Add inliers
-	for (int i = 0; i < axis; i++) {
+	for (int i = 0; i < numberOfInliers; i++) {
 		cloud.push_back(Point2f(i, i));
 	}
 
 	// Add outliers
-	random_device rd;
-    mt19937 gen(rd()); 
-    uniform_real_distribution<> dis(0.0, axis);
-
-	for (int i = 0; i < axis/2; i++) {
-		cloud.push_back(Point2f(dis(gen), dis(gen)));
+	for (int i = 0; i < numberOfOutliers; i++) {
+		cloud.push_back(Point2f(randomBetween(0, total), randomBetween(0, 5)));
 	}
 
-	vector<Point2f> line;
+	Line line;
 	ransac(2, cloud, CalculateLine(), 1, CalculateError(), 150, line);
-	cout << line << endl;
+	cout << line.a << "," << line.b << "," << line.c << endl;
 }
 
 int main() {
-    cout << "Test RANSAC" << endl;
-    testRANSAC();
+	testRandomRANSAC();
+    for (int i = 0; i < 10; i++) {
+		testRANSAC((float)i/10.0);
+	}
 
     return 0;
 }

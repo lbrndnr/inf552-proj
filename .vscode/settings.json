@@ -28,6 +28,9 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "__locale": "cpp",
-        "__bit_reference": "cpp"
+        "__bit_reference": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "queue": "cpp"
     }
 }
