@@ -46,7 +46,7 @@ void matchAndStitch(Mat I1, Mat I2, float overlap, Mat& K, bool shouldDrawMatche
     for (int indexMatches = 0; indexMatches<matches.size(); indexMatches++) {
         //int distance = abs(m1[matches[indexMatches].queryIdx].pt.x - m2[matches[indexMatches].trainIdx].pt.x);
         float currentX = m1[matches[indexMatches].queryIdx].pt.x;
-        if (currentX > righestMatch - I1.cols*overlap) {
+        if (currentX > righestMatch - I2.cols*overlap) {
         //}
         //if ( distance < (Ij.cols*1.5) + (Ii.cols-righestMatch)) {
             matches1.push_back(m1[matches[indexMatches].queryIdx].pt);
