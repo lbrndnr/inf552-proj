@@ -27,6 +27,14 @@
         "*.tpp": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp",
+        "map": "cpp",
+        "queue": "cpp",
+        "set": "cpp",
+        "unordered_map": "cpp"
     }
 }

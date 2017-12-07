@@ -7,11 +7,9 @@
 #include <unordered_map>
 
 #include <string>
-#include <filesystem>
 
 #include "RANSAC.h"
 #include "pano.h"
-
 
 using namespace std;
 using namespace cv;
@@ -83,7 +81,6 @@ struct CalculateErrorF {
 
 };
 
-
 class LinkBetweenPictures {
 
 	public:
@@ -116,7 +113,6 @@ struct CompareLinks {
 	}
 };
 
-
 Mat panorama(const vector<Mat>& pictures) {
 	int size = pictures.size();
 	Mat image0 = pictures.at(0);
@@ -124,8 +120,6 @@ Mat panorama(const vector<Mat>& pictures) {
 	vector<Mat> homographies(size);
 	Mat H0 = Mat::eye(3, 3, CV_64F);
 	homographies[0] = H0;
-	vector<Mat> homographiesContiguous(size);
-	homographiesContiguous[0] = H0;
 
 	Mat canvas = image0;
 
@@ -185,14 +179,24 @@ Mat panorama(const vector<Mat>& pictures) {
 				matchesResult.push_back(matches[indexMatches]);
 			}
 		}
-		//drawMatches(Ii, m1, Ij, m2, matchesResult, J);
-		//resize(J, J, Size(), .5, .5);
-		//imshow("newMatches!", J);
-		//waitKey(0);
+		// drawMatches(Ii, m1, Ij, m2, matchesResult, J);
+		// resize(J, J, Size(), .5, .5);
+		// imshow("newMatches!", J);
+		// waitKey(0);
 
 		Mat mask; // Inliers?
 		Mat Hji = findHomography(matches1, matches2, RANSAC, 3, mask);
-		homographiesContiguous[i] = Hji;
+
+		vector<DMatch> inliers;
+		for (int i = 0; i<matchesResult.size(); i++)
+			if (mask.at<uchar>(i, 0) != 0)
+				inliers.push_back(matchesResult[i]);
+
+		drawMatches(Ii, m1, Ij, m2, inliers, J);
+		resize(J, J, Size(), .5, .5);
+		imshow("newMatches!", J);
+		waitKey(0);
+
 		Mat K;
 		stitch(Ii, Ij, Hji, K);
 //		imshow("Panorama a 2. " + to_string(i-1) + "+" + to_string( i), K);
@@ -206,27 +210,49 @@ Mat panorama(const vector<Mat>& pictures) {
 		canvas = K;
 		imwrite("../resources/panoramaResult" + to_string(i) + ".jpg", K);
 	}
-	/*
-	Mat K = image0;
-	
-	for (int i = 1; i < size; i++) {
-		Mat Kaux;
-		Mat I_i = pictures.at(i);
-		//Mat I_pred = pictures.at(i-1);
-		stitch(K, I_i, homographies[i], Kaux);
-		//imshow("Panorama", Kaux);
-		//waitKey(0);
-		K = Kaux;
-		imwrite("../resources/panoramaResult" + to_string(i) + ".jpg", K);
-	}
-	imwrite("../resources/panoramaResultFinal.jpg", K);
-	*/
-
-	//Mat lastImage = pictures.at(size - 1);
-
-
 
 	return canvas;
+}
+
+
+
+Mat binaryPanorama(const vector<Mat>& pictures) {
+	vector<Mat> currentPictures = pictures, nextPictures;
+	bool overlapImages = false;
+	float overlap = 1.0f;
+
+	while (currentPictures.size() > 1) {
+		if (overlapImages) {
+			for (int i = 0; i < currentPictures.size()-2; i += 2) {
+				Mat I1 = currentPictures[i], I2 = currentPictures[i+1], I3 = currentPictures[i+2];
+				Mat K1, K2;
+				matchAndStitch(I1, I2, overlap, K1);
+				matchAndStitch(K1, I3, overlap/2, K2, true);
+
+				nextPictures.push_back(K2);
+			}
+
+			overlapImages = false;
+		}
+		else {
+			for (int i = 0; i < currentPictures.size()-1; i += 2) {
+				Mat I1 = currentPictures[i], I2 = currentPictures[i+1];
+				Mat K;
+				matchAndStitch(I1, I2, overlap, K, true);
+
+				nextPictures.push_back(K);
+			}
+		}
+
+		destroyAllWindows();
+
+		overlap /= 2.0f;
+		currentPictures = nextPictures;
+		nextPictures.clear();
+	}
+
+	// imwrite("../resources/panoramaResult" + ".jpg", currentPictures[0]);
+	return currentPictures[0];
 }
 
 /*
@@ -326,7 +352,7 @@ Mat panoramaUnordered(const vector<Mat>& pictures) {
 int main() {
 	vector<Mat> pictures;
 	//from 29 to 60 and then 26-28
-	for (int i = 51; i <= 60; i++) {
+	for (int i = 29; i <= 60; i++) {
 		string fileName = "../resources/pano1/IMG_00" + to_string(i) + ".JPG";
 		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
 		pictures.push_back(currentImage);
@@ -336,7 +362,7 @@ int main() {
 		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
 		pictures.push_back(currentImage);
 	}
-	panorama(pictures);
+	binaryPanorama(pictures);
 
 	
 
