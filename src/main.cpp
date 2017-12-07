@@ -8,176 +8,117 @@
 
 #include <string>
 
-#include "RANSAC.h"
 #include "pano.h"
 
 using namespace std;
 using namespace cv;
 
-Mat genMatFromPoint(Point2f p) {
-	Mat A = Mat::ones(3, 1, CV_64F);
-	A.at<double>(0, 0) = (double)p.x;
-    A.at<double>(1, 0) = (double)p.y;
+// void prototype() {
+// 	Mat I1 = imread("../resources/tour/IMG_0036.JPG", CV_LOAD_IMAGE_GRAYSCALE);
+// 	Mat I2 = imread("../resources/tour/IMG_0037.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 
-	return A;
-}
+// 	//Mat I1 = imread("../resources/IMG_0045.JPG", CV_LOAD_IMAGE_GRAYSCALE);
+// 	//Mat I2 = imread("../resources/IMG_0046.JPG", CV_LOAD_IMAGE_GRAYSCALE);
+// 	namedWindow("I1", 1);
+// 	namedWindow("I2", 1);
+// 	imshow("I1", I1);
+// 	imshow("I2", I2);
 
-struct CalculateHomographyF {
+// 	Ptr<ORB> D=ORB::create();
 
-	void operator()(vector< pair<Point2f, Point2f> > const &matches, Mat &homography) const {
-		assert(matches.size() == 4);
+// 	vector<KeyPoint> m1, m2;
+// 	Mat desc1, desc2;
+// 	D->detectAndCompute(I1, Mat(), m1, desc1);
+// 	D->detectAndCompute(I2, Mat(), m2, desc2);
 
-        Mat A = Mat::zeros(8, 8, CV_64FC1);
-		Mat b(8, 1, CV_64FC1);
+// 	Mat J;
+// 	drawKeypoints(I1, m1, J, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+// 	imshow("I1", J);
+// 	drawKeypoints(I2, m2, J, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+// 	imshow("I2", J);
+// 	waitKey(0);
 
-		for (int i = 0; i < 4; i++) {
-			Point2f p1 = matches[i].first, p2 = matches[i].second;
+// 	BFMatcher M(NORM_L2);
+// 	vector<DMatch> matches;
+// 	M.match(desc1, desc2, matches);
 
-			int r = 2*i;
-			A.at<double>(r, 0) = (double)p2.x;
-			A.at<double>(r, 1) = (double)p2.y;
-			A.at<double>(r, 2) = (double)1.0;
-			A.at<double>(r, 6) = (double)-p2.x*p1.x;
-			A.at<double>(r, 7) = (double)-p2.y*p1.x;
-			b.at<double>(r, 0) = (double)p1.x;
+// 	drawMatches(I1, m1, I2, m2, matches, J);
+// 	resize(J, J, Size(), .5, .5);
+// 	imshow("Matches", J);
+// 	waitKey(0);
 
-			r += 1;
-			A.at<double>(r, 3) = (double)p2.x;
-			A.at<double>(r, 4) = (double)p2.y;
-			A.at<double>(r, 5) = (double)1.0;
-			A.at<double>(r, 6) = (double)-p2.x*p1.y;
-			A.at<double>(r, 7) = (double)-p2.y*p1.y;
-			b.at<double>(r, 0) = (double)p1.y;
-		}
+//     vector< pair<Point2f, Point2f> > data;
+// 	for (int i = 0; i < matches.size(); i++) {
+// 		data.push_back(make_pair(m1[matches[i].queryIdx].pt, m2[matches[i].trainIdx].pt));
+// 	}
 
-		Mat H8;
-		// Can use solve or can use .inv() and multiply
-		//solve(A, b, H8);
-		A = A.inv();
-		H8 = A * b;
+// 	vector<Point2f> matches1, matches2;
+// 	for (int i = 0; i<matches.size(); i++) {
+// 		matches1.push_back(m1[matches[i].queryIdx].pt);
+// 		matches2.push_back(m2[matches[i].trainIdx].pt);
+// 	}
 
-		Mat H = Mat::ones(9, 1, CV_64FC1);
-		for (int i = 0; i < 8; i++) {
-			H.at<double>(i, 0) = H8.at<double>(i, 0);
-		}
+// 	Mat mask; // Inliers?
+// 	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
 
-		// why 1,3 and not 3,3????
-		homography= H.reshape(1, 3);
-	}
+// 		vector<DMatch> inliers;
+// 	for (int i = 0; i<matches.size(); i++)
+// 		if (mask.at<uchar>(i, 0) != 0)
+// 			inliers.push_back(matches[i]);
 
-};
+// 	cout << H << " with " << inliers.size() << " inliers" << endl;
+// 	Mat K1;
+// 	stitch(I1, I2, H, K1);
 
-struct CalculateErrorF {
-
-	float operator()(pair<Point2f, Point2f> match, Mat &H) const {
-        Mat A = genMatFromPoint(match.first);
-		Mat B = genMatFromPoint(match.second);
-        Mat X = H*B;
-
-		X /= X.at<double>(2, 0);
-
-        return norm(X, A, NORM_L2);
-	}
-
-};
-
-void prototype() {
-	Mat I1 = imread("../resources/tour/IMG_0036.JPG", CV_LOAD_IMAGE_GRAYSCALE);
-	Mat I2 = imread("../resources/tour/IMG_0037.JPG", CV_LOAD_IMAGE_GRAYSCALE);
-
-	//Mat I1 = imread("../resources/IMG_0045.JPG", CV_LOAD_IMAGE_GRAYSCALE);
-	//Mat I2 = imread("../resources/IMG_0046.JPG", CV_LOAD_IMAGE_GRAYSCALE);
-	namedWindow("I1", 1);
-	namedWindow("I2", 1);
-	imshow("I1", I1);
-	imshow("I2", I2);
-
-	Ptr<ORB> D=ORB::create();
-
-	vector<KeyPoint> m1, m2;
-	Mat desc1, desc2;
-	D->detectAndCompute(I1, Mat(), m1, desc1);
-	D->detectAndCompute(I2, Mat(), m2, desc2);
-
-	Mat J;
-	drawKeypoints(I1, m1, J, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-	imshow("I1", J);
-	drawKeypoints(I2, m2, J, Scalar::all(-1), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-	imshow("I2", J);
-	waitKey(0);
-
-	BFMatcher M(NORM_L2);
-	vector<DMatch> matches;
-	M.match(desc1, desc2, matches);
-
-	drawMatches(I1, m1, I2, m2, matches, J);
-	resize(J, J, Size(), .5, .5);
-	imshow("Matches", J);
-	waitKey(0);
-
-    vector< pair<Point2f, Point2f> > data;
-	for (int i = 0; i < matches.size(); i++) {
-		data.push_back(make_pair(m1[matches[i].queryIdx].pt, m2[matches[i].trainIdx].pt));
-	}
-
-	vector<Point2f> matches1, matches2;
-	for (int i = 0; i<matches.size(); i++) {
-		matches1.push_back(m1[matches[i].queryIdx].pt);
-		matches2.push_back(m2[matches[i].trainIdx].pt);
-	}
-
-	Mat mask; // Inliers?
-	Mat H = findHomography(matches1, matches2, RANSAC, 3, mask);
-
-		vector<DMatch> inliers;
-	for (int i = 0; i<matches.size(); i++)
-		if (mask.at<uchar>(i, 0) != 0)
-			inliers.push_back(matches[i]);
-
-	cout << H << " with " << inliers.size() << " inliers" << endl;
-	Mat K1;
-	stitch(I1, I2, H, K1);
-
-	imshow("I1+I2 findHomography", K1);
-	waitKey(0);
+// 	imshow("I1+I2 findHomography", K1);
+// 	waitKey(0);
 
 
-    Mat H2;
+//     Mat H2;
    
 	
-	ransac(4, data, CalculateHomographyF(), 20.0, CalculateErrorF(), 3000, H2);
-	cout << H2 << endl;
-	// drawMatches(I1, m1, I2, m2, inliers, J);
-	// resize(J, J, Size(), .5, .5);
-	// imshow("Inliers", J);
-	// cout << matches.size() << " matches" << " -> " << inliers.size() << " inliers" << endl;
-	// waitKey(0);
+// 	ransac(4, data, CalculateHomographyF(), 20.0, CalculateErrorF(), 3000, H2);
+// 	cout << H2 << endl;
+// 	// drawMatches(I1, m1, I2, m2, inliers, J);
+// 	// resize(J, J, Size(), .5, .5);
+// 	// imshow("Inliers", J);
+// 	// cout << matches.size() << " matches" << " -> " << inliers.size() << " inliers" << endl;
+// 	// waitKey(0);
 
 
 	
-	Mat K2;
-	stitch(I1, I2, H2, K2);
-	imshow("I1+I2 2000", K2);
-	waitKey(0);
+// 	Mat K2;
+// 	stitch(I1, I2, H2, K2);
+// 	imshow("I1+I2 2000", K2);
+// 	waitKey(0);
 
-	Mat H3;
-	ransac(4, data, CalculateHomographyF(), 20.0, CalculateErrorF(), 1500, H3);
+// 	Mat H3;
+// 	ransac(4, data, CalculateHomographyF(), 20.0, CalculateErrorF(), 1500, H3);
 	
-	Mat K3;
-	stitch(I1, I2, H3, K3);
-	imshow("I1+I2 500", K3);
+// 	Mat K3;
+// 	stitch(I1, I2, H3, K3);
+// 	imshow("I1+I2 500", K3);
+// 	waitKey(0);
+// }
+
+// Mat naivePanorama(vector<Mat> const &pictures) {
+// 	int size = pictures.size();
+// 	Mat pano = pictures[0];
+
+// 	for (int i = 1; i < size; i++) {
+// 		matchAndStitch(pano, pictures[i], 1.0f, pano, true);
+// 	}
+
+// 	return pano;
+// }
+
+Mat test(vector<Mat> const &pictures) {
+	Mat K;
+	matchAndStitch(pictures[0], pictures[1], 1, K, true);
+	imshow("K", K);
 	waitKey(0);
-}
 
-Mat naivePanorama(vector<Mat> const &pictures) {
-	int size = pictures.size();
-	Mat pano = pictures[0];
-
-	for (int i = 1; i < size; i++) {
-		matchAndStitch(pano, pictures[i], 1.0f, pano, true);
-	}
-
-	return pano;
+	return K;
 }
 
 Mat binaryPanorama(vector<Mat> const &pictures, bool overlapImages = false) {
@@ -241,6 +182,7 @@ int main() {
 		pictures.push_back(currentImage);
 	}
 	binaryPanorama(pictures);
+	// test(pictures);
 
 	return 0;
 }
