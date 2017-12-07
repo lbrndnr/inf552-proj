@@ -81,39 +81,7 @@ struct CalculateErrorF {
 
 };
 
-class LinkBetweenPictures {
-
-	public:
-		int numberOfMatches_, leftInt_, rightInt_;
-		vector<DMatch> matches_;
-		Mat leftImage_, rightImage_;
-		LinkBetweenPictures(const Mat& leftImage, const Mat& rightImage, int leftInt, int rightInt) {
-			if (leftInt == rightInt) {
-				cout << "There is a link between the same picture" << endl;
-			}
-			leftImage_ = leftImage;
-			rightImage_ = rightImage;
-			leftInt_ = leftInt;
-			rightInt_ = rightInt;
-			Mat desc1, desc2;
-			Ptr<ORB> D = ORB::create(); // TODO do i need to create this each time?
-			BFMatcher M(NORM_L2);
-			vector<KeyPoint> m1, m2;
-			D->detectAndCompute(leftImage, Mat(), m1, desc1);
-			D->detectAndCompute(rightImage, Mat(), m2, desc2);
-			M.match(desc1, desc2, matches_);
-			numberOfMatches_ = matches_.size();
-		}
-	
-};
-
-struct CompareLinks {
-	bool operator()(const LinkBetweenPictures& llink, const LinkBetweenPictures& rlink) {
-		return llink.numberOfMatches_ < rlink.numberOfMatches_;
-	}
-};
-
-Mat panorama(const vector<Mat>& pictures) {
+Mat naivePanorama(vector<Mat> const &pictures) {
 	int size = pictures.size();
 	Mat pano = pictures[0];
 
@@ -124,7 +92,7 @@ Mat panorama(const vector<Mat>& pictures) {
 	return pano;
 }
 
-Mat binaryPanorama(const vector<Mat>& pictures) {
+Mat binaryPanorama(vector<Mat> const &pictures) {
 	vector<Mat> currentPictures = pictures, nextPictures;
 	bool overlapImages = false;
 	float overlap = 1.0f;
@@ -163,98 +131,20 @@ Mat binaryPanorama(const vector<Mat>& pictures) {
 	return currentPictures[0];
 }
 
-/*
-// TODO make it work or drop it
-Mat panoramaUnordered(const vector<Mat>& pictures) {
-	int size = pictures.size();
-	Mat image0 = pictures.at(0);
-	priority_queue<LinkBetweenPictures, vector<LinkBetweenPictures>, CompareLinks> pq;
-	for (int i = 1; i < size; i++) {
-		Mat currentImage = pictures.at(i);
-		LinkBetweenPictures currentLink(image0, currentImage, 0, i);
-		pq.push(currentLink);
-	}
+Mat preMatchedPanorama(vector<Mat> const &pictures) {
+	Mat pano = pictures[0];
+	for (int i = 0; i < pictures.size()-1; i++) {
+		Mat H;
+		match(pictures[i], pictures[i+1], 1, H, false);
+		stitch(pano, pictures[i+1], H, pano);
 
-	//unordered_map<Mat, Mat> homographies;
-	vector<bool> homographyDone(size);
-	vector<Mat> homographies(size);
-
-
-	Mat H0 = Mat::eye(3, 3, CV_64F);
-	homographyDone[0] = true;
-	homographies[0] = H0;
-
-
-	while (!pq.empty()) {
-		LinkBetweenPictures currentLink = pq.top();
-		pq.pop();
-		int leftInt = currentLink.leftInt_;
-		int rightInt = currentLink.rightInt_;
-		if (homographyDone[leftInt]) {
-			Mat Ii = currentLink.leftImage_;
-			Mat Ij = currentLink.rightImage_;
-			
-			// Copy paste. TODO Put this on function and re use matches if can.
-			Ptr<ORB> D = ORB::create();
-			vector<KeyPoint> m1, m2;
-			Mat desc1, desc2;
-			D->detectAndCompute(Ii, Mat(), m1, desc1);
-			D->detectAndCompute(Ij, Mat(), m2, desc2);
-			BFMatcher M(NORM_L2);
-			vector<DMatch> matches;
-			M.match(desc1, desc2, matches);
-			vector< pair<Point2f, Point2f> > data;
-			for (int i = 0; i < matches.size(); i++) {
-				data.push_back(make_pair(m1[matches[i].queryIdx].pt, m2[matches[i].trainIdx].pt));
-			}
-			vector<Point2f> matches1, matches2;
-			for (int i = 0; i<matches.size(); i++) {
-				matches1.push_back(m1[matches[i].queryIdx].pt);
-				matches2.push_back(m2[matches[i].trainIdx].pt);
-			}
-			Mat mask; // Inliers?
-			Mat Hji = findHomography(matches1, matches2, RANSAC, 3, mask);
-			//Mat Hji_V2;
-			//ransac(4, data, CalculateHomographyF(), 50.0, CalculateErrorF(), 2000, Hij_V2);
-			
-			Mat Hi = homographies[leftInt];
-			Mat Hj = Hi * Hji;
-			homographies[rightInt] = Hj;
-			homographyDone[rightInt] = true;
-
-			for (int i = 0; i < size; i++) {
-				if (!homographyDone[i] && i!=rightInt) {
-					Mat currentImage = pictures.at(i);
-					LinkBetweenPictures currentLink(Ij, currentImage, rightInt, i);
-					pq.push(currentLink);
-				}
-			}
-
-
-		}
-
-
-	}
-
-	Mat K = image0;
-	for (int i = 1; i < size; i++) {
-		Mat Kaux;
-		Mat I_i = pictures.at(i);
-		stitch(K, I_i, homographies[i], Kaux);
-		imshow("Panorama", Kaux);
+		imshow("K", pano);
 		waitKey(0);
-		K = Kaux;
-
+		destroyAllWindows();
 	}
 
-	return K;
-
-	
-
-
-	
+	return pano;
 }
-*/
 
 
 int main() {
@@ -270,7 +160,7 @@ int main() {
 		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
 		pictures.push_back(currentImage);
 	}
-	panorama(pictures);
+	preMatchedPanorama(pictures);
 
 	Mat I1 = imread("../resources/pano1/IMG_0036.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 	Mat I2 = imread("../resources/pano1/IMG_0037.JPG", CV_LOAD_IMAGE_GRAYSCALE);

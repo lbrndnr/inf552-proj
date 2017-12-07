@@ -19,6 +19,12 @@ bool isColumnBlack(Mat I, int j) {
 }
 
 void matchAndStitch(Mat I1, Mat I2, float overlap, Mat& K, bool shouldDrawMatches) {
+    Mat H;
+    match(I1, I2, overlap, H, shouldDrawMatches);
+    stitch(I1, I2, H, K);
+}
+
+void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
     Ptr<AKAZE> D = AKAZE::create();
     vector<KeyPoint> m1, m2;
     Mat desc1, desc2;
@@ -56,22 +62,20 @@ void matchAndStitch(Mat I1, Mat I2, float overlap, Mat& K, bool shouldDrawMatche
     }
 
     Mat mask; // Inliers?
-    Mat H = findHomography(matches1, matches2, RANSAC, 10, mask);
-
-    vector<DMatch> inliers;
-    for (int i = 0; i<matchesResult.size(); i++)
-        if (mask.at<uchar>(i, 0) != 0)
-            inliers.push_back(matchesResult[i]);
+    H = findHomography(matches1, matches2, RANSAC, 10, mask);
 
     if (shouldDrawMatches) {
+        vector<DMatch> inliers;
+        for (int i = 0; i<matchesResult.size(); i++)
+            if (mask.at<uchar>(i, 0) != 0)
+                inliers.push_back(matchesResult[i]);
+
         Mat J;
         drawMatches(I1, m1, I2, m2, inliers, J);
         resize(J, J, Size(), .5, .5);
         imshow("Inlining matches", J);
         waitKey(0);
     }
-
-    stitch(I1, I2, H, K);
 }
 
 void stitch(Mat I1, Mat I2, Mat H, Mat& K) {
