@@ -35,6 +35,7 @@
         "map": "cpp",
         "queue": "cpp",
         "set": "cpp",
-        "unordered_map": "cpp"
+        "unordered_map": "cpp",
+        "filesystem": "cpp"
     }
 }

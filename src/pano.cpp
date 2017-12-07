@@ -192,19 +192,21 @@ void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
         }
     }
 
-    Mat mask; // Inliers?
+    vector<bool> mask;
     // H = findHomography(matches1, matches2, RANSAC, 10, mask);
-    ransac(4, data, CalculateHomographyF(), ChooseGoodSubsetF(), 5.0, CalculateErrorF(), 2000, H);
+    ransac(4, data, CalculateHomographyF(), ChooseGoodSubsetF(), 5.0, CalculateErrorF(), 2000, H, (shouldDrawMatches) ? &mask : NULL);
     H = H.inv();
 
     if (shouldDrawMatches) {
-        // vector<DMatch> inliers;
-        // for (int i = 0; i<matchesResult.size(); i++)
-        //     if (mask.at<uchar>(i, 0) != 0)
-        //         inliers.push_back(matchesResult[i]);
+        vector<DMatch> inliers;
+        for (int i = 0; i < matchesResult.size(); i++) {
+            if (mask[i]) {
+                inliers.push_back(matchesResult[i]);
+            }
+        }
 
         Mat J;
-        drawMatches(I1, m1, I2, m2, matches, J);
+        drawMatches(I1, m1, I2, m2, inliers, J);
         resize(J, J, Size(), .5, .5);
         imshow("Inlining matches", J);
         waitKey(0);

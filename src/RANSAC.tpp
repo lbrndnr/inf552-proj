@@ -39,8 +39,9 @@ void ransac(int minNumberOfDataPoints,
         double errorThreshold, 
         CalculateErrorF calculateError, 
         int maxNumberOfIterations,
-        Parameter_T& bestFittingParameters) {
-    ransac(minNumberOfDataPoints, data, calculateParameters, ChooseSubset(), errorThreshold, calculateError, maxNumberOfIterations, bestFittingParameters);
+        Parameter_T& bestFittingParameters,
+        vector<bool>* mask) {
+    ransac(minNumberOfDataPoints, data, calculateParameters, ChooseSubset(), errorThreshold, calculateError, maxNumberOfIterations, bestFittingParameters, mask);
 }
 
 template <class Parameter_T, class Data_T, class ChooseSubsetF, class CalculateParameterF, class CalculateErrorF>
@@ -51,11 +52,10 @@ void ransac(int minNumberOfDataPoints,
         double errorThreshold, 
         CalculateErrorF calculateError, 
         int maxNumberOfIterations,
-        Parameter_T& bestFittingParameters) {
+        Parameter_T& bestFittingParameters,
+        vector<bool>* mask) {
     assert(minNumberOfDataPoints > 0);
     int maxNumberOfInliers = 0;
-	int minNumberOfInliers = data.size()*0.1;
-	float minError = 20000000;
 
     for (int i = 0; i < maxNumberOfIterations; i++) {
         vector<Data_T> randomSubset;
@@ -65,30 +65,23 @@ void ransac(int minNumberOfDataPoints,
         calculateParameters(randomSubset, currentParameters);
 
         int numberOfInliers = 0;
-		vector<Data_T> inliers;
-		float errorAcumulated = 0.0;
         for (int j = 0; j < data.size(); j++) {
             float error = calculateError(data[j], currentParameters);
             if (error <= errorThreshold) {
-				errorAcumulated+=error;
                 numberOfInliers++;
-				inliers.push_back(data[j]);
             }
         }
-        if (numberOfInliers > minNumberOfInliers) {
-			errorAcumulated /= numberOfInliers;
-			if(maxNumberOfInliers < numberOfInliers){
-				maxNumberOfInliers = numberOfInliers;
-				minError = errorAcumulated;
-				bestFittingParameters = currentParameters;
-			} else{
-				if(errorAcumulated < minError && maxNumberOfInliers == numberOfInliers){
-					maxNumberOfInliers = numberOfInliers;
-					minError = errorAcumulated;
-					bestFittingParameters = currentParameters;
-				}
-			}
-			
+
+        if (numberOfInliers > maxNumberOfInliers) {
+            maxNumberOfInliers = numberOfInliers;
+            bestFittingParameters = currentParameters;			
+        }
+    }
+
+    if (mask != NULL) {
+        for (int j = 0; j < data.size(); j++) {
+            float error = calculateError(data[j], bestFittingParameters);
+            mask->push_back(error <= errorThreshold);
         }
     }
 }
