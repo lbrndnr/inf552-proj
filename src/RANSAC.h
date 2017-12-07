@@ -8,6 +8,7 @@
 using namespace cv;
 using namespace std;
 
+/// A generic RANSAC algorithm applied on data that chooses the subsets randomly
 template <class Parameter_T, class Data_T, class CalculateParameterF, class CalculateErrorF>
 void ransac(int minNumberOfDataPoints,
         vector<Data_T> data,
@@ -18,6 +19,9 @@ void ransac(int minNumberOfDataPoints,
         Parameter_T& bestFittingParameters,
         vector<bool>* mask = NULL);
 
+/// A generic RANSAC algorithm applied on data that allows the user to choose a subset himself
+/// This is handy as we don't know what kind of data we're dealing with. In some cases it's 
+/// more performant to select a 'good' subset.
 template <class Parameter_T, class Data_T, class ChooseSubsetF, class CalculateParameterF, class CalculateErrorF>
 void ransac(int minNumberOfDataPoints,
         vector<Data_T> data,

@@ -9,6 +9,7 @@
 using namespace std;
 using namespace cv;
 
+// Helper function to generate a matrix out of a 2d point
 Mat genMatFromPoint(Point2f p) {
 	Mat A = Mat::ones(3, 1, CV_64F);
 	A.at<double>(0, 0) = (double)p.x;
@@ -17,11 +18,15 @@ Mat genMatFromPoint(Point2f p) {
 	return A;
 }
 
+// The default functor we use to calculate the homography
 struct CalculateHomographyF {
 
 	void operator()(vector< pair<Point2f, Point2f> > const &matches, Mat &homography) const {
 		assert(matches.size() == 4);
 
+        // First we build the system of linear equations to find the homography H that maps points
+        // Note that A is only 8x8 instead of 9x8 as we expect H_33=1
+        // Source: http://www.csc.kth.se/~perrose/files/pose-init-model/node17.html
         Mat A = Mat::zeros(8, 8, CV_64FC1);
 		Mat b(8, 1, CV_64FC1);
 
@@ -45,23 +50,22 @@ struct CalculateHomographyF {
 			b.at<double>(r, 0) = (double)p1.y;
 		}
 
+        // Solve the system of equations
 		Mat H8;
-		// Can use solve or can use .inv() and multiply
-		//solve(A, b, H8);
-		A = A.inv();
-		H8 = A * b;
+		solve(A, b, H8);
 
+        // We create a column vector of ones and copy H8 into it
+        // This is the same effect as appending 1 to the column vector H8
 		Mat H = Mat::ones(9, 1, CV_64FC1);
-		for (int i = 0; i < 8; i++) {
-			H.at<double>(i, 0) = H8.at<double>(i, 0);
-		}
+		H8.copyTo(H(Rect(0, 0, 1, 8)));
 
-		// why 1,3 and not 3,3????
+		// Reshaping the matrix to make a 3x3 matrix out of a column vector
 		homography= H.reshape(1, 3);
 	}
 
 };
 
+// The default functor that we use to estimate the error
 struct CalculateErrorF {
 
 	float operator()(pair<Point2f, Point2f> match, Mat &H) const {
@@ -76,8 +80,14 @@ struct CalculateErrorF {
 
 };
 
+// An advanced functor to choose a 'random' subset more efficiently
+// The idea was inspired by OpenCV: We don't choose the subset not entirely randomly
+// so that the RANSAC algorithm needs less iterations in order to find a good subset
+// to estimate the model
 struct ChooseGoodSubsetF {
 
+    // This function checks whether there are any two points in the subset that
+    // are basically on the same line. If there are, the subset is not very adequate
 	bool checkSubset(vector<Point2f> const &points) const {
 		const float threshold = 0.996f;
 		int m = points.size();
@@ -107,9 +117,13 @@ struct ChooseGoodSubsetF {
         indices.push_back(rand() % m);
         firstSubset.push_back(data[indices[0]].first);
 		secondSubset.push_back(data[indices[0]].second);
+        int iterations = 0;
 
 		int j = 1;
 		while (j < cardinality) {
+            iterations++;
+            
+            // Choose a random, distinct pair and add it to the subset
 			bool isDiff = false;
             int currentRandom = 0;
             while(!isDiff){
@@ -125,18 +139,24 @@ struct ChooseGoodSubsetF {
             firstSubset.push_back(data[indices[j]].first);
 			secondSubset.push_back(data[indices[j]].second);
 
-			if (!this->checkSubset(firstSubset) || !this->checkSubset(secondSubset)) {
-				int idx = rand() % j;
-				indices.erase(indices.begin() + idx);
-				firstSubset.erase(firstSubset.begin() + idx);
-				secondSubset.erase(secondSubset.begin() + idx);
+            // We only do this for 1000 iterations, otherwise we give up to avoid infinite loops
+			if (iterations < 1000) {
+                // Check if the left or right subset has two points on the same line
+                if (!this->checkSubset(firstSubset) || !this->checkSubset(secondSubset)) {
+                    // If one of the does, we remove one random pair and try again
+                    int idx = rand() % j;
+                    indices.erase(indices.begin() + idx);
+                    firstSubset.erase(firstSubset.begin() + idx);
+                    secondSubset.erase(secondSubset.begin() + idx);
 
-				continue;
-			}
+                    continue;
+                }
+            }
 
 			j++;
 		}
 
+        // Merge the two separate subsets to a vector of pairs again
 		vector< pair<Point2f, Point2f> > subset;
 		for (int i = 0; i < cardinality; i++) {
 			subset.push_back(make_pair(firstSubset[i], secondSubset[i]));
@@ -147,6 +167,7 @@ struct ChooseGoodSubsetF {
 
 };
 
+// Returns true if the column j in image I is black
 bool isColumnBlack(Mat I, int j) {
     for (int i = 0; i < I.rows; i++) {
         if (I.at<uchar>(i, j) > 0) {
@@ -164,6 +185,7 @@ void matchAndStitch(Mat I1, Mat I2, float overlap, Mat& K, bool shouldDrawMatche
 }
 
 void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
+    // We use AKAZE instead of ORB as it yielded way better results (better matches)
     Ptr<AKAZE> D = AKAZE::create();
     vector<KeyPoint> m1, m2;
     Mat desc1, desc2;
@@ -176,17 +198,21 @@ void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
 
     vector< pair<Point2f, Point2f> > data;
     vector<DMatch> matchesResult;
-    float righestMatch = 0;
+    float rightMostMatch = 0;
     
+    // Find the right most match to estimate where the image begins and where the black border starts
     for (int indexMatches = 0; indexMatches < matches.size(); indexMatches++) {
         float currentX = m1[matches[indexMatches].queryIdx].pt.x;
-        if (currentX > righestMatch) {
-            righestMatch = currentX;
+        if (currentX > rightMostMatch) {
+            rightMostMatch = currentX;
         }
     }
+
+    // Now all the matches are filtered to only include matches at most (overlap * I2.cols) away from the right edge of the left image
+    // This makes sure that no key points in the right image are matched with key points that actually exist (possible matches)
     for (int indexMatches = 0; indexMatches<matches.size(); indexMatches++) {
         float currentX = m1[matches[indexMatches].queryIdx].pt.x;
-        if (currentX > righestMatch - I2.cols*overlap) {
+        if (currentX > rightMostMatch - I2.cols*overlap) {
             data.push_back(make_pair(m1[matches[indexMatches].queryIdx].pt, m2[matches[indexMatches].trainIdx].pt));
             matchesResult.push_back(matches[indexMatches]);
         }
@@ -198,6 +224,7 @@ void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
     H = H.inv();
 
     if (shouldDrawMatches) {
+        // Filter all matches to find the inliers according to our RANSAC algorithm
         vector<DMatch> inliers;
         for (int i = 0; i < matchesResult.size(); i++) {
             if (mask[i]) {
@@ -214,10 +241,12 @@ void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
 }
 
 void stitch(Mat I1, Mat I2, Mat H, Mat& K) {
-    K = Mat(2 * I1.cols, I1.rows, I1.type());
+    // K is about twice as large I1 => leaves a border on the right side as I2 will be distorted
+    K = Mat(I1.cols + I2.cols, I1.rows, I1.type());
 	warpPerspective(I1, K, Mat::eye(Size(3, 3), CV_32F), Size(I1.cols + I2.cols, I1.rows));
 	warpPerspective(I2, K, H, Size(I1.cols + I2.cols, I1.rows), INTER_NEAREST + CV_WARP_INVERSE_MAP, BORDER_TRANSPARENT);
 
+    // Figure out how wide the border is on the right side
     int i = I1.cols + I2.cols-2;
     while (i > I1.cols + I2.cols/2) {
         if (!isColumnBlack(K, i)) {
@@ -226,6 +255,7 @@ void stitch(Mat I1, Mat I2, Mat H, Mat& K) {
         i--;
     }
 
+    // Cut the border off
     Rect frame(0, 0, i, I1.rows);
     K = K(frame);
 }
