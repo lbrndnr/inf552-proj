@@ -70,10 +70,6 @@ using namespace cv;
 // 	Mat K1;
 // 	stitch(I1, I2, H, K1);
 
-// 	imshow("I1+I2 findHomography", K1);
-// 	waitKey(0);
-
-
 //     Mat H2;
    
 	
@@ -143,6 +139,9 @@ Mat binaryPanorama(vector<Mat> const &pictures, bool overlapImages = false) {
 				Mat I1 = currentPictures[i], I2 = currentPictures[i+1];
 				Mat K;
 				matchAndStitch(I1, I2, overlap, K, true);
+
+				imshow("K", K);
+				waitKey(0);
 
 				nextPictures.push_back(K);
 			}

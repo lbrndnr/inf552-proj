@@ -76,6 +76,77 @@ struct CalculateErrorF {
 
 };
 
+struct ChooseGoodSubsetF {
+
+	bool checkSubset(vector<Point2f> const &points) const {
+		const float threshold = 0.996f;
+		int m = points.size();
+		for (int j = 0; j < m-1; j++) {
+			Point2f d1 = points[j]-points[m-1];
+			float n1 = d1.x * d1.x + d1.y * d1.y;
+
+			for (int k = 0; k < j; k++) {
+				Point2f d2 = points[k]-points[m-1];
+				float denom = (d2.x*d2.x + d2.y*d2.y)*n1;
+				float num = d1.x*d2.x + d1.y*d2.y;
+
+				if (num*num > threshold*threshold*denom) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	void operator()(vector< pair<Point2f, Point2f> > const &data, int cardinality, vector< pair<Point2f, Point2f> >& randomSubset) const {
+        int  m = data.size();
+        vector<Point2f> firstSubset;
+		vector<Point2f> secondSubset;
+        vector<int> indices;
+        indices.push_back(rand() % m);
+        firstSubset.push_back(data[indices[0]].first);
+		secondSubset.push_back(data[indices[0]].second);
+
+		int j = 1;
+		while (j < cardinality) {
+			bool isDiff = false;
+            int currentRandom = 0;
+            while(!isDiff){
+                currentRandom = rand() % m;
+                isDiff = true;
+                for(int k=0; k<j && isDiff;k++) {
+                    if (currentRandom == indices[k]) {
+                        isDiff = false;
+                    }
+                }
+            }
+            indices.push_back(currentRandom);
+            firstSubset.push_back(data[indices[j]].first);
+			secondSubset.push_back(data[indices[j]].second);
+
+			if (!this->checkSubset(firstSubset) || !this->checkSubset(secondSubset)) {
+				int idx = rand() % j;
+				indices.erase(indices.begin() + idx);
+				firstSubset.erase(firstSubset.begin() + idx);
+				secondSubset.erase(secondSubset.begin() + idx);
+
+				continue;
+			}
+
+			j++;
+		}
+
+		vector< pair<Point2f, Point2f> > subset;
+		for (int i = 0; i < cardinality; i++) {
+			subset.push_back(make_pair(firstSubset[i], secondSubset[i]));
+		}
+
+        randomSubset = subset;
+	}
+
+};
+
 bool isColumnBlack(Mat I, int j) {
     for (int i = 0; i < I.rows; i++) {
         if (I.at<uchar>(i, j) > 0) {
@@ -123,7 +194,7 @@ void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
 
     Mat mask; // Inliers?
     // H = findHomography(matches1, matches2, RANSAC, 10, mask);
-    ransac(4, data, CalculateHomographyF(), 5.0, CalculateErrorF(), 2000, H);
+    ransac(4, data, CalculateHomographyF(), ChooseGoodSubsetF(), 5.0, CalculateErrorF(), 2000, H);
     H = H.inv();
 
     if (shouldDrawMatches) {
