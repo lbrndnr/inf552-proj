@@ -150,20 +150,15 @@ Mat preMatchedPanorama(vector<Mat> const &pictures) {
 int main() {
 	vector<Mat> pictures;
 	//from 29 to 60 and then 26-28
-	for (int i = 29; i <= 60; i++) {
-		string fileName = "../resources/pano1/IMG_00" + to_string(i) + ".JPG";
+	for (int i = 30; i <= 60; i++) {
+		string fileName = "../resources/tour/IMG_00" + to_string(i) + ".JPG";
 		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
 		pictures.push_back(currentImage);
 	}
-	for (int i = 26; i <= 28; i++) {
-		string fileName = "../resources/pano1/IMG_00" + to_string(i) + ".JPG";
-		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
-		pictures.push_back(currentImage);
-	}
-	preMatchedPanorama(pictures);
+	binaryPanorama(pictures);
 
-	Mat I1 = imread("../resources/pano1/IMG_0036.JPG", CV_LOAD_IMAGE_GRAYSCALE);
-	Mat I2 = imread("../resources/pano1/IMG_0037.JPG", CV_LOAD_IMAGE_GRAYSCALE);
+	Mat I1 = imread("../resources/tour/IMG_0036.JPG", CV_LOAD_IMAGE_GRAYSCALE);
+	Mat I2 = imread("../resources/tour/IMG_0037.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 
 	//Mat I1 = imread("../resources/IMG_0045.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 	//Mat I2 = imread("../resources/IMG_0046.JPG", CV_LOAD_IMAGE_GRAYSCALE);
