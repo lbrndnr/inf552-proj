@@ -81,82 +81,7 @@ struct CalculateErrorF {
 
 };
 
-Mat naivePanorama(vector<Mat> const &pictures) {
-	int size = pictures.size();
-	Mat pano = pictures[0];
-
-	for (int i = 1; i < size; i++) {
-		matchAndStitch(pano, pictures[i], 1.0f, pano, true);
-	}
-
-	return pano;
-}
-
-Mat binaryPanorama(vector<Mat> const &pictures) {
-	vector<Mat> currentPictures = pictures, nextPictures;
-	bool overlapImages = false;
-	float overlap = 1.0f;
-
-	while (currentPictures.size() > 1) {
-		if (overlapImages) {
-			for (int i = 0; i < currentPictures.size()-2; i += 2) {
-				Mat I1 = currentPictures[i], I2 = currentPictures[i+1], I3 = currentPictures[i+2];
-				Mat K1, K2;
-				matchAndStitch(I1, I2, overlap, K1);
-				matchAndStitch(K1, I3, overlap/2, K2, true);
-
-				nextPictures.push_back(K2);
-			}
-
-			overlapImages = false;
-		}
-		else {
-			for (int i = 0; i < currentPictures.size()-1; i += 2) {
-				Mat I1 = currentPictures[i], I2 = currentPictures[i+1];
-				Mat K;
-				matchAndStitch(I1, I2, overlap, K, true);
-
-				nextPictures.push_back(K);
-			}
-		}
-
-		destroyAllWindows();
-
-		overlap /= 2.0f;
-		currentPictures = nextPictures;
-		nextPictures.clear();
-	}
-
-	// imwrite("../resources/panoramaResult" + ".jpg", currentPictures[0]);
-	return currentPictures[0];
-}
-
-Mat preMatchedPanorama(vector<Mat> const &pictures) {
-	Mat pano = pictures[0];
-	for (int i = 0; i < pictures.size()-1; i++) {
-		Mat H;
-		match(pictures[i], pictures[i+1], 1, H, false);
-		stitch(pano, pictures[i+1], H, pano);
-
-		imshow("K", pano);
-		waitKey(0);
-		destroyAllWindows();
-	}
-
-	return pano;
-}
-
-
-int main() {
-	vector<Mat> pictures;
-	//from 29 to 60 and then 26-28
-	for (int i = 30; i <= 60; i++) {
-		string fileName = "../resources/tour/IMG_00" + to_string(i) + ".JPG";
-		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
-		pictures.push_back(currentImage);
-	}
-	binaryPanorama(pictures);
-
+void prototype() {
 	Mat I1 = imread("../resources/tour/IMG_0036.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 	Mat I2 = imread("../resources/tour/IMG_0037.JPG", CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -242,6 +167,80 @@ int main() {
 	stitch(I1, I2, H3, K3);
 	imshow("I1+I2 500", K3);
 	waitKey(0);
+}
+
+Mat naivePanorama(vector<Mat> const &pictures) {
+	int size = pictures.size();
+	Mat pano = pictures[0];
+
+	for (int i = 1; i < size; i++) {
+		matchAndStitch(pano, pictures[i], 1.0f, pano, true);
+	}
+
+	return pano;
+}
+
+Mat binaryPanorama(vector<Mat> const &pictures, bool overlapImages = false) {
+	vector<Mat> currentPictures = pictures, nextPictures;
+	float overlap = 1.0f;
+
+	while (currentPictures.size() > 1) {
+		if (overlapImages) {
+			for (int i = 0; i < currentPictures.size()-2; i += 2) {
+				Mat I1 = currentPictures[i], I2 = currentPictures[i+1], I3 = currentPictures[i+2];
+				Mat K1, K2;
+				matchAndStitch(I1, I2, overlap, K1);
+				matchAndStitch(K1, I3, overlap/2, K2, true);
+
+				nextPictures.push_back(K2);
+			}
+
+			overlapImages = false;
+		}
+		else {
+			for (int i = 0; i < currentPictures.size()-1; i += 2) {
+				Mat I1 = currentPictures[i], I2 = currentPictures[i+1];
+				Mat K;
+				matchAndStitch(I1, I2, overlap, K, true);
+
+				nextPictures.push_back(K);
+			}
+		}
+
+		destroyAllWindows();
+
+		overlap /= 2.0f;
+		currentPictures = nextPictures;
+		nextPictures.clear();
+	}
+
+	// imwrite("../resources/panoramaResult" + ".jpg", currentPictures[0]);
+	return currentPictures[0];
+}
+
+Mat preMatchedPanorama(vector<Mat> const &pictures) {
+	Mat pano = pictures[0];
+	for (int i = 0; i < pictures.size()-1; i++) {
+		Mat H;
+		match(pictures[i], pictures[i+1], 1, H, false);
+		stitch(pano, pictures[i+1], H, pano);
+
+		imshow("K", pano);
+		waitKey(0);
+		destroyAllWindows();
+	}
+
+	return pano;
+}
+
+int main() {
+	vector<Mat> pictures;
+	for (int i = 30; i <= 60; i++) {
+		string fileName = "../resources/tour/IMG_00" + to_string(i) + ".JPG";
+		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
+		pictures.push_back(currentImage);
+	}
+	binaryPanorama(pictures);
 
 	return 0;
 }
