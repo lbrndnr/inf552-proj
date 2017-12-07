@@ -1,6 +1,7 @@
 #include <iostream>
 #include <functional>
 #include <random>
+#include <fstream>
 
 #include "../src/RANSAC.h"
 
@@ -55,9 +56,8 @@ void testRandomRANSAC() {
 	cout << line.a << "," << line.b << "," << line.c << endl;
 }
 
-void testRANSAC(float outlierRatio) {
+void testRANSAC(int total, float outlierRatio, string fileName = "") {
 	vector<Point2f> cloud;
-	int total = 1000;
 	int numberOfInliers = total * (1.0 - outlierRatio);
 	int numberOfOutliers = total * outlierRatio;
 
@@ -77,13 +77,25 @@ void testRANSAC(float outlierRatio) {
 	Line line;
 	ransac(2, cloud, CalculateLine(), 1, CalculateError(), 150, line);
 	cout << line.a << "," << line.b << "," << line.c << endl;
+
+	if (!fileName.empty()) {
+		ofstream file;
+		file.open(fileName);
+		file << "x,y" << endl;
+		for (int i = 0; i < cloud.size(); i++) {
+			file << cloud[i].x << "," << cloud[i].y << endl;
+		}
+		file.close();
+	}
 }
 
 int main() {
 	testRandomRANSAC();
     for (int i = 0; i < 10; i++) {
-		testRANSAC((float)i/10.0);
+		testRANSAC(1000, (float)i/10.0);
 	}
+
+	testRANSAC(100, 0.2, "../report/plots/ransac1.csv");
 
     return 0;
 }
