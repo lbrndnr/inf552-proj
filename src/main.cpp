@@ -59,6 +59,7 @@ Mat binaryPanorama(vector<Mat> const &pictures, bool overlapImages = false) {
 				Mat K;
 				stitchingPossible = matchAndStitch(I1, I2, overlap, K, false, fileName);
 				if (!stitchingPossible) {
+					cout << "Aborting. Stitching not possible anymore." << endl;
 					break;
 				}
 
