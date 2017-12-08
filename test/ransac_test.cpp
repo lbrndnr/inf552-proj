@@ -48,16 +48,30 @@ float randomBetween(float a, float b) {
     return a + r;
 }
 
+// A helper function that generates a cloud with the a certain amount of outliers
+vector<Point2f> generateCloud(int total, float outlierRatio) {
+	vector<Point2f> cloud;
+	int numberOfInliers = total * (1.0 - outlierRatio);
+	int numberOfOutliers = total * outlierRatio;
+
+	// Add inliers
+	for (int i = 0; i < numberOfInliers; i++) {
+		cloud.push_back(Point2f(i + randomBetween(-5, 5), 2*i + randomBetween(-5, 5)));
+	}
+
+	// Add outliers
+	for (int i = 0; i < numberOfOutliers; i++) {
+		cloud.push_back(Point2f(randomBetween(0, total), randomBetween(0, total)));
+	}
+
+	return cloud;
+}
+
 // A test function to check how RANSAC behaves for a pseudo random cloud of points
 void testRandomRANSAC() {
 	cout << "Test RANSAC on a random cloud" << endl;
 
-    vector<Point2f> cloud;
-	int total = 1000;
-
-	for (int i = 0; i < total; i++) {
-		cloud.push_back(Point2f(randomBetween(0, total), randomBetween(0, total)));
-	}
+    vector<Point2f> cloud = generateCloud(1000, 1);
 
 	Line line;
 	ransac(2, cloud, CalculateLineF(), 1, CalculateErrorF(), 150, line);
@@ -66,46 +80,42 @@ void testRandomRANSAC() {
 
 // A test function to check how RANSAC behaves for a cloud of points 
 // with 'total' points and the specified outlier ratio
-void testRANSAC(int total, float outlierRatio, string fileName = "") {
-	vector<Point2f> cloud;
-	int numberOfInliers = total * (1.0 - outlierRatio);
-	int numberOfOutliers = total * outlierRatio;
-
-	cout << "Test RANSAC with " << numberOfOutliers << " outliers and " << numberOfInliers << " inliers"  << endl;
-
-	// Add inliers
-	for (int i = 0; i < numberOfInliers; i++) {
-		cloud.push_back(Point2f(i, i));
-	}
-
-	// Add outliers
-	for (int i = 0; i < numberOfOutliers; i++) {
-		cloud.push_back(Point2f(randomBetween(0, total), randomBetween(0, 5)));
-	}
-
+void testRANSAC(vector<Point2f> cloud, int iterations, string fileName = "") {
 	Line line;
-	ransac(2, cloud, CalculateLineF(), 1, CalculateErrorF(), 150, line);
+	vector<bool> mask;
+	ransac(2, cloud, CalculateLineF(), 5, CalculateErrorF(), iterations, line, &mask);
 	cout << line.a << "," << line.b << "," << line.c << endl;
 
 	// Write the data cloud to a csv file for the report
 	if (!fileName.empty()) {
 		ofstream file;
 		file.open(fileName);
-		file << "x,y" << endl;
+		file << "x,y,m" << endl;
 		for (int i = 0; i < cloud.size(); i++) {
-			file << cloud[i].x << "," << cloud[i].y << endl;
+			file << cloud[i].x << "," << cloud[i].y << "," << (mask[i] ? "i" : "o") << endl;
 		}
 		file.close();
 	}
 }
 
 int main() {
-	testRandomRANSAC();
-    for (int i = 0; i < 10; i++) {
-		testRANSAC(1000, (float)i/10.0);
-	}
+	srand(time(NULL));
 
-	testRANSAC(100, 0.2, "../report/plots/ransac1.csv");
+	// testRandomRANSAC();
+    // for (int i = 0; i < 10; i++) {
+	// 	testRANSAC(1000, (float)i/10.0);
+	// }
+
+	vector<Point2f> cloudA = generateCloud(100, 0.6);
+	vector<Point2f> cloudB = generateCloud(100, 0.8);
+
+	// First we run it with few iterations
+	testRANSAC(cloudA, 10, "../report/plots/ransac1.csv");
+	testRANSAC(cloudB, 20, "../report/plots/ransac2.csv");
+
+	// Now we let it run with a bit more iterations
+	testRANSAC(cloudA, 20, "../report/plots/ransac3.csv");
+	testRANSAC(cloudB, 40, "../report/plots/ransac4.csv");
 
     return 0;
 }

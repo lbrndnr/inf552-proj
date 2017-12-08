@@ -50,15 +50,82 @@
 
 \pgfplotstableread[col sep = comma]{plots/ransac1.csv}\ransacone
 \begin{tikzpicture}
-    \begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100]
-   		\addplot table[scatter, only marks, x=x, y=y] {\ransacone};
-    \end{axis}
-    \begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
-		\addplot[very thick, red, domain=0:90] {1.00186*x - 0.119019};
-    \end{axis}
-    \begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
-		\addplot [thick, green] table[y={create col/linear regression={y=y}}]{\ransacone};
-    \end{axis}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100]
+    \addplot[
+        scatter,only marks,scatter src=explicit symbolic,
+        scatter/classes={
+            i={mark=*,blue},
+            o={mark=*,red}
+        }
+    ]
+    table[x=x,y=y,meta=m]{\ransacone};
+\end{axis}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
+	\addplot[very thick, teal, domain=0:90] {1.29076*x+7.16786};
+\end{axis}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
+	\addplot [thick, magenta] table[y={create col/linear regression={y=y}}]{\ransacone};
+\end{axis}
+\end{tikzpicture}
+
+\pgfplotstableread[col sep = comma]{plots/ransac2.csv}\ransactwo
+\begin{tikzpicture}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100]
+    \addplot[
+        scatter,only marks,scatter src=explicit symbolic,
+        scatter/classes={
+            i={mark=*,blue},
+            o={mark=*,red}
+        }
+    ]
+    table[x=x,y=y,meta=m]{\ransactwo};
+\end{axis}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
+	\addplot[very thick, teal, domain=0:90] {1.19087*x+6.5601};
+\end{axis}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
+	\addplot [thick, magenta] table[y={create col/linear regression={y=y}}]{\ransactwo};
+\end{axis}
+\end{tikzpicture}
+
+\pgfplotstableread[col sep = comma]{plots/ransac3.csv}\ransacthree
+\begin{tikzpicture}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100]
+    \addplot[
+        scatter,only marks,scatter src=explicit symbolic,
+        scatter/classes={
+            i={mark=*,blue},
+            o={mark=*,red}
+        }
+    ]
+    table[x=x,y=y,meta=m]{\ransacthree};
+\end{axis}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
+	\addplot[very thick, teal, domain=0:90] {2.06581*x+1.26837};
+\end{axis}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
+	\addplot [thick, magenta] table[y={create col/linear regression={y=y}}]{\ransacthree};
+\end{axis}
+\end{tikzpicture}
+
+\pgfplotstableread[col sep = comma]{plots/ransac4.csv}\ransacfour
+\begin{tikzpicture}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100]
+    \addplot[
+        scatter,only marks,scatter src=explicit symbolic,
+        scatter/classes={
+            i={mark=*,blue},
+            o={mark=*,red}
+        }
+    ]
+    table[x=x,y=y,meta=m]{\ransacfour};
+\end{axis}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
+	\addplot[very thick, teal, domain=0:90] {2.05931*x+6.69725};
+\end{axis}
+\begin{axis}[xmin = -10, ymin = -10,xmax = 100, ymax = 100, yticklabels={,,}, xticklabels={,,}]
+	\addplot [thick, magenta] table[y={create col/linear regression={y=y}}]{\ransacfour};
+\end{axis}
 \end{tikzpicture}
 
 \subsection{Panorama Stitching}

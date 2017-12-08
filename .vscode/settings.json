@@ -36,6 +36,8 @@
         "queue": "cpp",
         "set": "cpp",
         "unordered_map": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "fstream": "cpp",
+        "locale": "cpp"
     }
 }
