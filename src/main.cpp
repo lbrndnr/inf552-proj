@@ -24,6 +24,24 @@ Mat test(vector<Mat> const &pictures) {
 	return K;
 }
 
+Mat homographyPanorama(vector<Mat> const &pictures) {
+	Mat pano = pictures[0];
+	Mat G = Mat::eye(3, 3, CV_64F);
+
+	for (int i = 1; i < pictures.size(); i++) {
+		string fileName = "../resources/output/homography_panorama" + to_string(i-1) + ".jpg";
+		Mat H;
+		match(pictures[i-1], pictures[i], 1, H, true);
+		G = G*H;
+		stitch(pano, pictures[i], G, pano);
+		imshow("K", pano);
+		imwrite(fileName, pano);
+		waitKey(0);
+	}
+
+	return pano;
+}
+
 // Creates one single image out of the pictures array
 // Works by first stitching single images two a pair, then pairs to an image of 4 and so on
 // To reduce the number of stitching compared to the naive way => reduces errors 
@@ -118,7 +136,7 @@ int main() {
 		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
 		pictures.push_back(currentImage);
 	}
-	binaryPanorama(pictures);
+	homographyPanorama(pictures);
 	// test(pictures);
 
 	return 0;
