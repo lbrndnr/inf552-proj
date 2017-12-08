@@ -178,13 +178,17 @@ bool isColumnBlack(Mat I, int j) {
     return true;
 }
 
-void matchAndStitch(Mat I1, Mat I2, float overlap, Mat& K, bool shouldDrawMatches) {
+bool matchAndStitch(Mat I1, Mat I2, float overlap, Mat& K, bool shouldShowMatches, string fileName) {
     Mat H;
-    match(I1, I2, overlap, H, shouldDrawMatches);
-    stitch(I1, I2, H, K);
+    if (match(I1, I2, overlap, H, shouldShowMatches, fileName)) {
+        stitch(I1, I2, H, K);
+        return true;
+    }
+
+    return false;
 }
 
-void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
+bool match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldShowMatches, string fileName) {
     // We use AKAZE instead of ORB as it yielded way better results (better matches)
     Ptr<AKAZE> D = AKAZE::create();
     vector<KeyPoint> m1, m2;
@@ -218,9 +222,13 @@ void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
         }
     }
 
+    bool shouldDrawMatches = (shouldShowMatches || !fileName.empty());
     vector<bool> mask;
     // H = findHomography(matches1, matches2, RANSAC, 10, mask);
-    ransac(4, data, CalculateHomographyF(), ChooseGoodSubsetF(), 5.0, CalculateErrorF(), 2000, H, (shouldDrawMatches) ? &mask : NULL);
+    bool success = ransac(4, data, CalculateHomographyF(), ChooseGoodSubsetF(), 5.0, CalculateErrorF(), 2000, H, (shouldDrawMatches) ? &mask : NULL);
+    if (!success) {
+        return success;
+    }
     H = H.inv();
 
     if (shouldDrawMatches) {
@@ -234,10 +242,19 @@ void match(Mat I1, Mat I2, float overlap, Mat& H, bool shouldDrawMatches) {
 
         Mat J;
         drawMatches(I1, m1, I2, m2, inliers, J);
-        resize(J, J, Size(), .5, .5);
-        imshow("Inlining matches", J);
-        waitKey(0);
+
+        if (!fileName.empty()) {
+            imwrite(fileName, J);
+        }
+
+        if (shouldShowMatches) {
+            resize(J, J, Size(), .5, .5);
+            imshow("Inlining matches", J);
+            waitKey(0);
+        }
     }
+
+    return success;
 }
 
 void stitch(Mat I1, Mat I2, Mat H, Mat& K) {

@@ -29,8 +29,10 @@ Mat test(vector<Mat> const &pictures) {
 Mat binaryPanorama(vector<Mat> const &pictures, bool overlapImages = false) {
 	vector<Mat> currentPictures = pictures, nextPictures;
 	float overlap = 1.0f;
+	int k = 0;
+	bool stitchingPossible = true;
 
-	while (currentPictures.size() > 1) {
+	while (currentPictures.size() > 1 && stitchingPossible) {
 		// If we overlap images we stitch 3 images together in the first round instead of only two
 		// Thus, if we continue matching, we'd basically match the same image on both sides
 		// The idea was that if we have more key points => more matches => better result
@@ -48,15 +50,28 @@ Mat binaryPanorama(vector<Mat> const &pictures, bool overlapImages = false) {
 			overlapImages = false;
 		}
 		else {
+			cout << currentPictures.size() << " pictures left to stitch" << endl;
 			for (int i = 0; i < currentPictures.size()-1; i += 2) {
+				string fileName = "../resources/output/binary_panorama" + to_string(k) + ".jpg";
+				cout << "Stitching " << fileName << endl;
+
 				Mat I1 = currentPictures[i], I2 = currentPictures[i+1];
 				Mat K;
-				matchAndStitch(I1, I2, overlap, K, true);
+				stitchingPossible = matchAndStitch(I1, I2, overlap, K, false, fileName);
+				if (!stitchingPossible) {
+					break;
+				}
 
-				imshow("K", K);
-				waitKey(0);
+				// imshow("K", K);
+				// waitKey(0);
 
+				k++;
 				nextPictures.push_back(K);
+			}
+
+			// Add remaining image so that we don't lose it
+			if ((currentPictures.size() % 2) == 1) {
+				nextPictures.push_back(currentPictures[currentPictures.size()-1]);
 			}
 		}
 
@@ -69,7 +84,6 @@ Mat binaryPanorama(vector<Mat> const &pictures, bool overlapImages = false) {
 		nextPictures.clear();
 	}
 
-	// imwrite("../resources/panoramaResult" + ".jpg", currentPictures[0]);
 	return currentPictures[0];
 }
 

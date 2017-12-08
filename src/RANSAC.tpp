@@ -36,7 +36,7 @@ struct ChooseSubsetF {
 };
 
 template <class Parameter_T, class Data_T, class CalculateParameter_F, class CalculateError_F>
-void ransac(int minNumberOfDataPoints,
+bool ransac(int minNumberOfDataPoints,
         vector<Data_T> data,
         CalculateParameter_F calculateParameters, 
         double errorThreshold, 
@@ -44,11 +44,11 @@ void ransac(int minNumberOfDataPoints,
         int maxNumberOfIterations,
         Parameter_T& bestFittingParameters,
         vector<bool>* mask) {
-    ransac(minNumberOfDataPoints, data, calculateParameters, ChooseSubsetF(), errorThreshold, calculateError, maxNumberOfIterations, bestFittingParameters, mask);
+    return ransac(minNumberOfDataPoints, data, calculateParameters, ChooseSubsetF(), errorThreshold, calculateError, maxNumberOfIterations, bestFittingParameters, mask);
 }
 
 template <class Parameter_T, class Data_T, class ChooseSubset_F, class CalculateParameter_F, class CalculateError_F>
-void ransac(int minNumberOfDataPoints,
+bool ransac(int minNumberOfDataPoints,
         vector<Data_T> data,
         CalculateParameter_F calculateParameters, 
         ChooseSubset_F chooseSubset,
@@ -59,7 +59,9 @@ void ransac(int minNumberOfDataPoints,
         vector<bool>* mask) {
     // First, we make sure that the supplied arguments make sense
     assert(minNumberOfDataPoints > 0);
-    assert(data.size() > minNumberOfDataPoints);
+    if (data.size() < minNumberOfDataPoints) {
+        return false;
+    }
 
     int maxNumberOfInliers = 0;
 
@@ -95,4 +97,6 @@ void ransac(int minNumberOfDataPoints,
             mask->push_back(error <= errorThreshold);
         }
     }
+
+    return true;
 }
