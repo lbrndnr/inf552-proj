@@ -16,9 +16,10 @@ using namespace cv;
 // Just a test function for debugging
 Mat test(vector<Mat> const &pictures) {
 	Mat K;
-	matchAndStitch(pictures[0], pictures[1], 1, K, true);
+	matchAndStitch(pictures[13], pictures[14], 1, K, true, "../resources/matchers/akaze1.jpg");
 	imshow("K", K);
 	waitKey(0);
+	imwrite("../resources/matchers/akaze1_pano.jpg", K);
 
 	return K;
 }
