@@ -39,6 +39,34 @@
 
 \begin{document}
 
+\begin{titlepage}
+    \begin{center}
+        \vspace*{1cm}
+        
+        \Huge
+        \textbf{RANSAC générique et Panorama}
+        
+        \vspace{0.5cm}
+        
+        \vspace{1.5cm}
+        
+        \textbf{Diego de Rochebouët} \\
+        \textbf{Laurin Brandner}
+        
+        \vfill
+        
+        \Large
+        Analyse d'Images et Vision par Ordinateur
+        
+        \vspace{0.8cm}
+        
+        \Large
+        INF552\\
+        École Polytechnique\\
+        
+    \end{center}
+\end{titlepage}
+
 \section{Introduction}
 
 L’objectif de ce projet est d'implémenter l'algorithme RANSAC (RANdom SAmple Consensus) de manière générique, en utilisant tous les outils de C++, pour que celui là puisse être utilisé en nombreux problem completement differents. \\
@@ -230,7 +258,7 @@ On a donc comme variables pour notre RANSAC:
 \begin{description}[labelindent=16pt,style=multiline,leftmargin=7cm, noitemsep]
 	\item[Données:] C’est un ensemble de pair de points, des "matches",  qui correspond au même point entre les deux images.
 	\item[Nombre minimum de donnée:] Puisqu’on a besoin de 4 pair de point pour calculer l’homographie
-	\item[Error threshold:] TODOOOOOOO
+	\item[Error threshold:] Ce paramètre dépend du problème et dans ce cas on a utilisé 3.0 car les résultat était correct. 
 	\item[CalculateParametres:] Fonction qui calcule homographie
 	\item[CalculateError:] Fonction qui avec un match et une homographie calcule un erreur.
 	\item[bestFittingParameters:] On attend une homographie (representée par une matrice 3x3).
@@ -314,14 +342,31 @@ Avec ce troisième essaie on a obtenue ces résultats:
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=.8\textwidth]{../resources/output/best_panorama.jpg}
-\captionof{figure}{Le panorama résultant en utilisant 8 images}
+\includegraphics[width=.1\textwidth]{../resources/tour/IMG_0051.jpg}
+\includegraphics[width=.1\textwidth]{../resources/tour/IMG_0052.jpg}
+\includegraphics[width=.1\textwidth]{../resources/tour/IMG_0053.jpg}
+\includegraphics[width=.1\textwidth]{../resources/tour/IMG_0054.jpg}
+\includegraphics[width=.1\textwidth]{../resources/tour/IMG_0055.jpg}
+\includegraphics[width=.1\textwidth]{../resources/tour/IMG_0056.jpg}
+\includegraphics[width=.1\textwidth]{../resources/tour/IMG_0057.jpg}
+\includegraphics[width=.1\textwidth]{../resources/tour/IMG_0058.jpg}
+\includegraphics[width=.2\textwidth]{../resources/output/binary_panorama_selected0.jpg}
+\includegraphics[width=.2\textwidth]{../resources/output/binary_panorama_selected1.jpg}
+\includegraphics[width=.2\textwidth]{../resources/output/binary_panorama_selected2.jpg}
+\includegraphics[width=.2\textwidth]{../resources/output/binary_panorama_selected3.jpg}
+\includegraphics[width=.4\textwidth]{../resources/output/binary_panorama_selected4.jpg}
+\includegraphics[width=.4\textwidth]{../resources/output/binary_panorama_selected5.jpg}
+\includegraphics[width=.8\textwidth]{../resources/output/binary_panorama_selected6.jpg}
+\captionof{figure}{L'algorithme binaire appliqué à 8 images}
 \end{figure}
 
 Comme on peut voir, les résultat continue à ne pas être parfait, mais maintenant c’est pas du à un erreur accumulé mais dû au fait que quelques paires d’images ont des homographies très mauvaises, que c’est le cas de quelque images du panorama du lac de la cour de Polytechnique ou la section où quelques images se superposent est très petite.
 
 \section{Conclusion}
 
-L’algorithme de RANSAC est un algorithme avec une logique très simple mais très puissant, vu que celui là peut être utilisé dans n’importe quel problème où on doit trouver un modèle à partir de ensemble de donnée. Seulement on doit connaitre comment calculer le modèle à partir des donnée (et donc aussi le nombre minimum des donnée nécessaires) et comment calculer l’erreur du modèle. Et vu que ces fonctions sont normalement naturelle au problèmes, elle ne sont pas difficil de trouver, ce qui permet avoire une rapide et facile solution au problèmes de ce type. 
+L’algorithme de RANSAC est un algorithme avec une logique très simple mais très puissant, vu que celui là peut être utilisé dans n’importe quel problème où on doit trouver un modèle à partir de ensemble de donnée. Seulement on doit connaitre comment calculer le modèle à partir des donnée (et donc aussi le nombre minimum des donnée nécessaires) et comment calculer l’erreur du modèle. Et vu que ces fonctions sont normalement naturelle au problèmes, elle ne sont pas difficil de trouver, ce qui permet avoire une rapide et facile solution au problèmes de ce type. \\
+D’une autre part, on peut voir que nos panoramas fonctionnent plutôt bien, mais si et seulement si les homographies originels fonctionnait bien, ca serait intéressant d’essayer de trouver d’autre manière pour trouver les homographies et les tester pour voir si il y a une méthode qui, même si elle est plus lente, fonctionne mieux dans ces cas. \\
+Et dernièrement, notre panorama ne marche que pour un panorama horizontal. Ça serait aussi très intéressant d'élargir cette algorithme pour qu’il puisse créer des panorama aussi verticalmente, et puis faire des panorama sphériques.  
+
 
 \end{document}
