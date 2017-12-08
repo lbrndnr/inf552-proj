@@ -24,7 +24,9 @@ Mat test(vector<Mat> const &pictures) {
 	return K;
 }
 
-Mat homographyPanorama(vector<Mat> const &pictures) {
+// First try
+// This algorithm works by accumulating homographies into one matrix by multiplying them
+Mat multipliedHomographyPanorama(vector<Mat> const &pictures) {
 	Mat pano = pictures[0];
 	Mat G = Mat::eye(3, 3, CV_64F);
 
@@ -42,6 +44,22 @@ Mat homographyPanorama(vector<Mat> const &pictures) {
 	return pano;
 }
 
+// Second try
+// Naive algorithm, just stich images one by one
+Mat iterativePanorama(vector<Mat> const &pictures) {
+	Mat pano = pictures[0];
+
+	for (int i = 1; i < pictures.size(); i++) {
+		string fileName = "../resources/output/iterative_panorama_filtered" + to_string(i-1) + ".jpg";
+		matchAndStitch(pano, pictures[i], 1, pano, true, fileName);
+		imshow("K", pano);
+		waitKey(0);
+	}
+
+	return pano;
+}
+
+// Thrid try
 // Creates one single image out of the pictures array
 // Works by first stitching single images two a pair, then pairs to an image of 4 and so on
 // To reduce the number of stitching compared to the naive way => reduces errors 
@@ -136,7 +154,7 @@ int main() {
 		Mat currentImage = imread(fileName, CV_LOAD_IMAGE_GRAYSCALE);
 		pictures.push_back(currentImage);
 	}
-	homographyPanorama(pictures);
+	binaryPanorama(pictures);
 	// test(pictures);
 
 	return 0;
